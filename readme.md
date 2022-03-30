@@ -1,6 +1,6 @@
 2022 Mar 27: Basic structure of blockchain server
+<details><summary>Features table</summary>
 
-**Features table:**
 | Function                                | Status        | Remarks       |
 | ----------------                        | ------------- | ------------- |
 | **Block Structure (3pts)**              |               |               |
@@ -8,7 +8,7 @@
 |   - Timestamp                           | Completed     |               |
 |   - Pre Block Hash                      | Completed     |               |
 |   - Cur Block Hash                      | Completed     |               |
-|   - Dicfficulty                         | Completed     |               |
+|   - Difficulty                          | Completed     |               |
 |   - Nonce                               | Completed     |               |
 |   - Merkle Root Trans                   | Completed     |               |
 |   - Transaction data                    | Completed     |               |
@@ -24,9 +24,11 @@
 |   - validate blocks                     | Partial       |               |
 |   - longest chain rule when a fork      |               |               |
 | **Storage (3pts, 1ea)**                 |               |               |
-|   - store roaw data in disk             |               |               |
+|   - store raw data in disk              |               |               |
 |   - store state of blockchain in mem    |               |               |
 |   - store UTXO in transaction pool      |               |               |
+</details>
 
-**References**
+<details><summary>References</summary>
 1. https://gruyaume.medium.com/create-your-own-blockchain-using-python-merkle-tree-pt-2-f84478a30690
+</details>
