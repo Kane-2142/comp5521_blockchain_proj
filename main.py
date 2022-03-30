@@ -7,6 +7,7 @@ import json
 from uuid import uuid4
 from urllib.parse import urlparse
 from flask import Flask, jsonify, request
+from merkle_tree import get_merkle_root
 
 transactions = []
 TPCoins = []
@@ -17,6 +18,10 @@ class Blockchain:
     def __init__(self):
         self.chain = []
         self.current_transactions = []
+        self.current_transactions.append({
+            "sender": 0,
+            "recient": 0,
+            "data": 0,})
         self.nodes = set()
         self.create_block(proof=1, previous_hash='0')
 
@@ -33,6 +38,7 @@ class Blockchain:
             'timestamp': str(datetime.datetime.now()),
             'previous_hash': previous_hash or self.hash(self.chain[-1]),
             'transactions': self.current_transactions,
+            'merkle_root' : get_merkle_root(self.current_transactions),
             'proof': proof,
             'difficulty': self.get_difficulty()
         }
@@ -121,6 +127,7 @@ def mine():
     response = {
         'message': "Forged new block.",
         'index': block['index'],
+        'merkle_root' : block['merkle_root'],
         'transactions': block['transactions'],
         'difficulty': block['difficulty'],
         'nonce': block['proof'],
