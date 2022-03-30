@@ -33,7 +33,8 @@ class Blockchain:
             'timestamp': str(datetime.datetime.now()),
             'previous_hash': previous_hash or self.hash(self.chain[-1]),
             'transactions': self.current_transactions,
-            'proof': proof
+            'proof': proof,
+            'difficulty': self.get_difficulty()
         }
         self.current_transactions = []
         self.chain.append(new_block)
@@ -62,16 +63,21 @@ class Blockchain:
         # find a number p' such as hash(pp') containing leading 4 zeros where p is the previous p'
         # p is the previous proof and p' is the new proof
         proof = 0
-        while self.validate_proof(last_proof, proof) is False:
+        diff = self.get_difficulty()
+        while self.validate_proof(diff, last_proof, proof) is False:
             proof += 1
         return proof
+    
+    def get_difficulty(self):
+        diff = len(self.chain) 
+        return diff
 
     @staticmethod
-    def validate_proof(last_proof, proof):
+    def validate_proof(diff, last_proof, proof):
         # validates the proof: does hash(last_proof, proof) contain 4 leading zeroes?
         guess = f'{last_proof}{proof}'.encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
-        return guess_hash[:4] == "0000"
+        return guess_hash.startswith('0' * diff)
 
     def register_node(self, address):
         # add a new node to the list of nodes
@@ -116,7 +122,8 @@ def mine():
         'message': "Forged new block.",
         'index': block['index'],
         'transactions': block['transactions'],
-        'proof': block['proof'],
+        'difficulty': block['difficulty'],
+        'nonce': block['proof'],
         'previous_hash': block['previous_hash'],
     }
     return jsonify(response, 200)
@@ -174,4 +181,4 @@ def register_nodes():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run()
