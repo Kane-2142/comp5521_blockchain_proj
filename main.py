@@ -90,6 +90,9 @@ node_identifier = str(uuid4()).replace('-', '')
 # initiate the Blockchain
 blockchain = Blockchain()
 
+@app.route('/', methods=['GET'])
+def home():
+    return "Welcome to COMP5521 Blockchain Project"
 
 @app.route('/mine', methods=['GET'])
 def mine():
@@ -119,7 +122,7 @@ def mine():
     return jsonify(response, 200)
 
 
-@app.route('/transaction/new', methods=['GET'])
+@app.route('/transaction/new', methods=['POST'])
 def new_transaction():
     values = request.get_json()
     required = ['sender', 'recipient', 'amount']
