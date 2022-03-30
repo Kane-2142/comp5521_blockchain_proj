@@ -1,6 +1,6 @@
 2022 Mar 27: Basic structure of blockchain server
 
-Features table:
+**Features table:**
 | Function                                | Status        | Remarks       |
 | ----------------                        | ------------- | ------------- |
 | **Block Structure (3pts)**              |               |               |
@@ -27,3 +27,6 @@ Features table:
 |   - store roaw data in disk             |               |               |
 |   - store state of blockchain in mem    |               |               |
 |   - store UTXO in transaction pool      |               |               |
+
+**References**
+1. https://gruyaume.medium.com/create-your-own-blockchain-using-python-merkle-tree-pt-2-f84478a30690
