@@ -10,7 +10,7 @@ Features table:
 |   - Cur Block Hash                      | Completed     |               |
 |   - Dicfficulty                         | Completed     |               |
 |   - Nonce                               | Completed     |               |
-|   - Merkle Root Trans                   |               |               |
+|   - Merkle Root Trans                   | Completed     |               |
 |   - Transaction data                    | Completed     |               |
 | **Mining (3pts)**                       |               |               |
 |   - Proof-of-work (2pts)                | Completed     |               |
