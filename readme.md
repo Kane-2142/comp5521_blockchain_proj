@@ -18,15 +18,15 @@
 | **Transaction (3pts, 1ea)**             |               |               |
 |   - pay-to-public-key-hash (P2PKH)      | Completed     |               |
 |   - signatures and verify trans         | Completed     |               |
-|   - coinbase transaction                |               |               |
+|   - coinbase transaction                | Completed     |               |
 | **Network (3pts, 1ea)**                 |               |               |
 |   - broadcast new blocks and get blocks |               |               |
 |   - validate blocks                     | Partial       |               |
 |   - longest chain rule when a fork      |               |               |
 | **Storage (3pts, 1ea)**                 |               |               |
-|   - store raw data in disk              |               |               |
+|   - store raw data in disk              | Completed     |               |
 |   - store state of blockchain in mem    |               |               |
-|   - store UTXO in transaction pool      |               |               |
+|   - store UTXO in transaction pool      | Completed     |               |
 </details>
 
 <details><summary>References</summary>
