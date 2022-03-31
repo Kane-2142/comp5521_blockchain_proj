@@ -8,11 +8,18 @@ from uuid import uuid4
 from urllib.parse import urlparse
 from flask import Flask, jsonify, request
 from merkle_tree import get_merkle_root
+from block import Block
+import time
 
 transactions = []
 TPCoins = []
 last_block_hash = ""
 
+DIFFICULTY_ADJUSTMENT_INTERVAL = 5
+BLOCK_GENERATION_INTERVAL = 20
+
+def get_timestamp():
+  return round(time.time())
 
 class Blockchain:
     def __init__(self):
@@ -23,25 +30,47 @@ class Blockchain:
             "recient": 0,
             "data": 0,})
         self.nodes = set()
-        self.create_block(proof=1, previous_hash='0')
+        #self.create_block(proof=1, previous_hash='0')
+        
+        # Create genesis block
+        self.chain.append(Block(
+            index = 0,
+            previous_hash = '0',
+            timestamp = get_timestamp(),
+            nonce = 0,
+            transactions = []
+        ))
 
-    @staticmethod
-    def hash(block):
-        # hashes a block
-        # also make sure that the transactions are ordered otherwise we will have insonsistent hashes!
-        block_string = json.dumps(block, sort_keys=True).encode()
-        return hashlib.sha256(block_string).hexdigest()
+    #@staticmethod
+    #def hash(block):
+    #    # hashes a block
+    #    # also make sure that the transactions are ordered otherwise we will have insonsistent hashes!
+    #    block_string = json.dumps(block, sort_keys=True).encode()
+    #    return hashlib.sha256(block_string).hexdigest()
 
-    def create_block(self, proof, previous_hash):
-        new_block = {
-            'index': len(self.chain) + 1,
-            'timestamp': str(datetime.datetime.now()),
-            'previous_hash': previous_hash or self.hash(self.chain[-1]),
-            'transactions': self.current_transactions,
-            'merkle_root' : get_merkle_root(self.current_transactions),
-            'proof': proof,
-            'difficulty': self.get_difficulty()
-        }
+    #def create_block(self, proof, previous_hash):
+    #    new_block = {
+    #        'index': len(self.chain) + 1,
+    #        'timestamp': str(datetime.datetime.now()),
+    #        'previous_hash': previous_hash or self.hash(self.chain[-1]),
+    #        'transactions': self.current_transactions,
+    #        'merkle_root' : get_merkle_root(self.current_transactions),
+    #        'proof': proof,
+    #        'difficulty': self.get_difficulty()
+    #    }
+    #    self.current_transactions = []
+    #    self.chain.append(new_block)
+    #    return new_block
+    
+    def create_block(self, previousBlock):
+        new_block = Block(
+            index = previousBlock.index + 1,
+            timestamp = get_timestamp(),
+            previous_hash = previousBlock.hash,
+            transactions = self.current_transactions,
+            nonce = 0,
+        )
+        new_block = self.proof_of_work(self.chain, self.current_transactions, get_merkle_root(self.current_transactions))
         self.current_transactions = []
         self.chain.append(new_block)
         return new_block
@@ -62,28 +91,72 @@ class Blockchain:
             "recient": recipient,
             "data": amount,
         })
-        return int(self.last_block['index']) + 1
+        return int(self.last_block.index) + 1
 
-    def proof_of_work(self, last_proof):
-        # simple proof of work algorithm
-        # find a number p' such as hash(pp') containing leading 4 zeros where p is the previous p'
-        # p is the previous proof and p' is the new proof
-        proof = 0
-        diff = self.get_difficulty()
-        while self.validate_proof(diff, last_proof, proof) is False:
-            proof += 1
-        return proof
+    #def proof_of_work(self, last_proof):
+    #    # simple proof of work algorithm
+    #    # find a number p' such as hash(pp') containing leading 4 zeros where p is the previous p'
+    #    # p is the previous proof and p' is the new proof
+    #    proof = 0
+    #    diff = self.get_difficulty()
+    #    while self.validate_proof(diff, last_proof, proof) is False:
+    #        proof += 1
+    #    return proof
     
-    def get_difficulty(self):
-        diff = len(self.chain) 
-        return diff
+    #def get_difficulty(self):
+    #    diff = len(self.chain) 
+    #    return diff
 
     @staticmethod
-    def validate_proof(diff, last_proof, proof):
-        # validates the proof: does hash(last_proof, proof) contain 4 leading zeroes?
-        guess = f'{last_proof}{proof}'.encode()
-        guess_hash = hashlib.sha256(guess).hexdigest()
-        return guess_hash.startswith('0' * diff)
+    def proof_of_work(blockchain, transactions, merkle_root):
+        nonce = 0
+        latestBlock = blockchain[-1]
+        difficulty = Blockchain.get_difficulty(blockchain)
+        while(True):
+            block = Block(
+                index = latestBlock.index + 1,
+                previous_hash = latestBlock.hash,
+                timestamp = get_timestamp(),
+                transactions = transactions,
+                merkle_root = merkle_root,
+                nonce = nonce,
+                difficulty = difficulty
+            )
+            if Blockchain.validate_proof(block.hash, difficulty) == True:
+                return block
+    
+    @staticmethod
+    def get_difficulty(blockchain):
+        latestBlock = blockchain[-1]
+        if latestBlock.index % DIFFICULTY_ADJUSTMENT_INTERVAL == 0 and latestBlock != 0:
+            return Blockchain.get_adjusted_difficulty(latestBlock, blockchain)
+        else:
+            return latestBlock.difficulty
+
+    @staticmethod
+    def get_adjusted_difficulty(latestBlock, aBlockchain):
+        prevAdjustmentBlock = aBlockchain[-1]
+        timeExpected = BLOCK_GENERATION_INTERVAL - DIFFICULTY_ADJUSTMENT_INTERVAL
+        timeTaken = latestBlock.timestamp - prevAdjustmentBlock.timestamp
+        if timeTaken < timeExpected / 2:
+            return prevAdjustmentBlock.difficulty + 1
+        elif timeTaken > timeExpected * 2:
+            return prevAdjustmentBlock.difficulty - 1
+        else:
+            return prevAdjustmentBlock.difficulty
+
+    #@staticmethod
+    #def validate_proof(diff, last_proof, proof):
+    #    print(diff)
+    #    # validates the proof: does hash(last_proof, proof) contain 4 leading zeroes?
+    #    guess = f'{last_proof}{proof}'.encode()
+    #    guess_hash = hashlib.sha256(guess).hexdigest()
+    #    print(guess_hash)
+    #    return guess_hash.startswith('0' * diff)
+    
+    @staticmethod
+    def validate_proof(hash, difficulty):
+        return hash.startswith('0' * difficulty)
 
     def register_node(self, address):
         # add a new node to the list of nodes
@@ -110,8 +183,8 @@ def home():
 def mine():
     # first we need to run the proof of work algorithm to calculate the new proof..
     last_block = blockchain.last_block
-    last_proof = last_block['proof']
-    proof = blockchain.proof_of_work(last_proof)
+    #last_proof = last_block['proof']
+    #proof = blockchain.proof_of_work(last_proof)
 
     # we must receive reward for finding the proof in form of receiving 1 Coin
     blockchain.new_transaction(
@@ -121,17 +194,18 @@ def mine():
     )
 
     # forge the new block by adding it to the chain
-    previous_hash = blockchain.hash(last_block)
-    block = blockchain.create_block(proof, previous_hash)
+    #previous_hash = blockchain.hash(last_block)
+    #block = blockchain.create_block(proof, previous_hash)
+    block = blockchain.create_block(last_block)
 
     response = {
         'message': "Forged new block.",
-        'index': block['index'],
-        'merkle_root' : block['merkle_root'],
-        'transactions': block['transactions'],
-        'difficulty': block['difficulty'],
-        'nonce': block['proof'],
-        'previous_hash': block['previous_hash'],
+        'index': block.index,
+        'merkle_root' : block.merkle_root,
+        'transactions': block.transactions,
+        'difficulty': block.difficulty,
+        'nonce': block.nonce,
+        'previous_hash': block.previous_hash,
     }
     return jsonify(response, 200)
 
@@ -159,8 +233,9 @@ def new_transaction():
 
 @app.route('/chain', methods=['GET'])
 def full_chain():
+    print(blockchain.chain)
     response = {
-        'chain': blockchain.chain,
+        'chain': [item.toDict for item in blockchain.chain],
         'length': len(blockchain.chain),
     }
     return jsonify(response), 200
