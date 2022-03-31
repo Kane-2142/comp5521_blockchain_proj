@@ -229,11 +229,19 @@ def new_transaction():
 
     if not all(k in values for k in required):
         return 'Missing values.', 400
+    inputs = json.loads(values['inputs'])
+    outputs = json.loads(values['outputs'])
+    tx_inputs = []
+    tx_outputs= []
+    for i in inputs:
+        tx_inputs.append(TransactionInput(i['txid'],i['vout']))
+    for o in outputs:
+        tx_outputs.append(TransactionOutput(o['receiver'], o['amount']))
 
     # create a new transaction
     index = blockchain.new_transaction(
-        inputs=values['inputs'],
-        outputs=values['outputs']
+        inputs=tx_inputs,
+        outputs=tx_outputs
     )
 
     response = {
