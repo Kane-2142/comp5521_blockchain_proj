@@ -12,7 +12,10 @@ from block import Block
 import time
 from transaction import Transaction, TransactionInput, TransactionOutput
 from owner import Owner
+
 from transaction_verifier import Transaction_Verifier, TransactionVer_Exception
+import sys
+
 
 transactions = []
 TPCoins = []
@@ -343,4 +346,5 @@ def register_nodes():
 
 
 if __name__ == '__main__':
-    app.run()
+    port_no = sys.argv[1] if len(sys.argv) > 1 else 5000
+    app.run(port=port_no)
