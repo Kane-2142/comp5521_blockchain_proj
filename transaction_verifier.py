@@ -5,7 +5,8 @@ import requests
 
 # from block import Block
 # from main import Blockchain
-# from common.storage import KnownNodesMemory, MemPool
+
+from storage import Transaction_Pool
 from script import StackScript
 
 
@@ -23,7 +24,7 @@ class Transaction_Verifier:
         self.outputs = []
         self.is_valid = False
         self.is_funds_sufficient = False
-        # self.mempool = MemPool()
+        self.transaction_pool = Transaction_Pool()
         # self.known_node_memory = KnownNodesMemory()
         self.sender = ""
         # self.hostname = hostname
@@ -35,9 +36,8 @@ class Transaction_Verifier:
 
     @property
     def is_new(self):
-        # current_transactions = self.mempool.get_transactions_from_memory()
-        # if self.transaction_data in current_transactions:
-        if self.transaction_data in self.blockchain.current_transactions:
+        current_transactions = self.transaction_pool.get_transactions_from_memory()
+        if self.transaction_data in current_transactions:
             return False
         return True
 
@@ -105,6 +105,14 @@ class Transaction_Verifier:
             raise TransactionVer_Exception(f"inputs ({inputs_total}), outputs ({outputs_total})",
                                             "Transaction inputs and outputs did not match")
 
+    def store(self):
+        if self.is_valid and self.is_funds_sufficient:
+            logging.info("Storing transaction data in memory")
+            logging.info(f"Transaction data: {self.transaction_data}")
+            current_transactions = self.transaction_pool.get_transactions_from_memory()
+            current_transactions.append(self.transaction_data)
+            self.transaction_pool.store_transactions_in_memory(current_transactions)
+
     # def broadcast(self):
     #     logging.info("Broadcasting to all nodes")
     #     node_list = self.known_node_memory.known_nodes
@@ -116,10 +124,4 @@ class Transaction_Verifier:
     #             except requests.ConnectionError:
     #                 logging.info(f"Failed broadcasting to {node.hostname}")
     #
-    # def store(self):
-    #     if self.is_valid and self.is_funds_sufficient:
-    #         logging.info("Storing transaction data in memory")
-    #         logging.info(f"Transaction data: {self.transaction_data}")
-    #         current_transactions = self.mempool.get_transactions_from_memory()
-    #         current_transactions.append(self.transaction_data)
-    #         self.mempool.store_transactions_in_memory(current_transactions)
+

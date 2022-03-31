@@ -14,6 +14,7 @@ import time
 from transaction import Transaction, TransactionInput, TransactionOutput
 from owner import Owner
 
+from storage import Transaction_Pool
 from transaction_verifier import Transaction_Verifier, TransactionVer_Exception
 import sys
 
@@ -24,19 +25,23 @@ last_block_hash = ""
 
 DIFFICULTY_ADJUSTMENT_INTERVAL = 5
 BLOCK_GENERATION_INTERVAL = 20
+COINBASE_REWARD     = 1
 
 def get_timestamp():
   return round(time.time())
 
+
+class BlockException(Exception):
+    def __init__(self, expression, message):
+        self.expression = expression
+        self.message = message
+
+
 class Blockchain:
     def __init__(self, owner):
         self.chain = []
-        self.current_transactions = []
+        self.transaction_pool = Transaction_Pool()
         self.owner = owner
-        input_0 = TransactionInput("trans0", 0)
-        output_0 = TransactionOutput(owner.public_key_hash, 50)
-        transaction_0 = Transaction([input_0], [output_0])
-        self.current_transactions.append(transaction_0.transaction_data)
         self.nodes = set()
         #self.create_block(proof=1, previous_hash='0')
         
@@ -48,40 +53,23 @@ class Blockchain:
             nonce = 0,
             transactions = []
         ))
-
-    #@staticmethod
-    #def hash(block):
-    #    # hashes a block
-    #    # also make sure that the transactions are ordered otherwise we will have insonsistent hashes!
-    #    block_string = json.dumps(block, sort_keys=True).encode()
-    #    return hashlib.sha256(block_string).hexdigest()
-
-    #def create_block(self, proof, previous_hash):
-    #    new_block = {
-    #        'index': len(self.chain) + 1,
-    #        'timestamp': str(datetime.datetime.now()),
-    #        'previous_hash': previous_hash or self.hash(self.chain[-1]),
-    #        'transactions': self.current_transactions,
-    #        'merkle_root' : get_merkle_root(self.current_transactions),
-    #        'proof': proof,
-    #        'difficulty': self.get_difficulty()
-    #    }
-    #    self.current_transactions = []
-    #    self.chain.append(new_block)
-    #    return new_block
     
     def create_block(self, previousBlock):
-        new_block = Block(
-            index = previousBlock.index + 1,
-            timestamp = get_timestamp(),
-            previous_hash = previousBlock.hash,
-            transactions = self.current_transactions,
-            nonce = 0,
-        )
-        new_block = self.proof_of_work(self.chain, self.current_transactions, get_merkle_root(self.current_transactions))
-        self.current_transactions = []
-        self.chain.append(new_block)
-        return new_block
+        transactions = self.transaction_pool.get_transactions_from_memory()
+        if transactions:
+            new_block = Block(
+                index = previousBlock.index + 1,
+                timestamp = get_timestamp(),
+                previous_hash = previousBlock.hash,
+                transactions = transactions,
+                nonce = 0,
+            )
+            new_block = self.proof_of_work(self.chain, transactions, get_merkle_root(transactions))
+            self.transaction_pool.clear_transactions_from_memory()
+            self.chain.append(new_block)
+            return new_block
+        else:
+            raise BlockException("", "No transaction in transaction_pool")
 
     def get_last_block(self):
         return self.chain[-1]
@@ -91,40 +79,58 @@ class Blockchain:
         # returns last block in the chain
         return self.chain[-1]
 
-    def new_transaction(self, inputs: [TransactionInput], outputs: [TransactionOutput]):
-        # adds a new transaction into the list of transactions
-        # these transactions go into the next mined block
-        transaction = Transaction(inputs, outputs)
-        transaction.sign(owner)
-        self.current_transactions.append(transaction.transaction_data)
-        return int(self.last_block.index) + 1
-
     def get_transaction(self, transaction_hash):
+        result = {}
         for block in reversed(self.chain):
             if block.get_transaction(transaction_hash):
-                return block.get_transaction(transaction_hash)
+                result["confirmation"] = self.last_block.index - block.index + 1
+                result["transaction_data"] = block.get_transaction(transaction_hash)
+                return result
+            else:
+                transactions = self.transaction_pool.get_transactions_from_memory()
+                if transactions:
+                    for tx in transactions:
+                        if tx["transaction_hash"] == transaction_hash:
+                            result["confirmation"] = "pending"
+                            result["transaction_data"] = tx
+                            return result
         return {}
 
-    def get_user_utxos(self, user: str) -> dict:
-        return_dict = {
-            "user": user,
-            "total": 0,
-            "utxos": []
-        }
+    def is_transaction_spent(self, transaction_hash):
         for block in reversed(self.chain):
-            for transaction in block.transactions:
-                for output in transaction["outputs"]:
-                    locking_script = output["locking_script"]
-                    for element in locking_script.split(" "):
-                        if not element.startswith("OP") and element == user:
-                            return_dict["total"] = return_dict["total"] + output["amount"]
-                            return_dict["utxos"].append(
-                                {
-                                    "amount": output["amount"],
-                                    "transaction_hash": transaction["transaction_hash"]
-                                }
-                            )
-        return return_dict
+            if block.transactions:
+                for transaction in block.transactions:
+                    for inputs in transaction["inputs"]:
+                        if transaction_hash == inputs["transaction_hash"]:
+                            return True
+        return False
+
+
+    def get_user_utxos(self, user: str) -> dict:
+        outputs = []
+        for block in reversed(self.chain):
+            if block.transactions:
+                for transaction in block.transactions:
+                    for output in transaction["outputs"]:
+                        locking_script = output["locking_script"]
+                        for element in locking_script.split(" "):
+                            if not element.startswith("OP") and element == user:
+                                outputs.append({
+                                        "amount": output["amount"],
+                                        "transaction_hash": transaction["transaction_hash"]
+                                })
+        unspent_outputs = []
+        unspent_amount = 0
+        for output in outputs:
+            if not self.is_transaction_spent(output["transaction_hash"]):
+                unspent_amount = unspent_amount + output["amount"]
+                unspent_outputs.append({
+                    "amount": output["amount"],
+                    "transaction_hash": output["transaction_hash"]
+                })
+        return {"user": user,
+                "total": unspent_amount,
+                "utxos": unspent_outputs}
 
     def get_transaction_from_utxo(self, utxo_hash: str) -> dict:
         for block in reversed(self.chain):
@@ -189,15 +195,7 @@ class Blockchain:
         else:
             return prevAdjustmentBlock.difficulty
 
-    #@staticmethod
-    #def validate_proof(diff, last_proof, proof):
-    #    print(diff)
-    #    # validates the proof: does hash(last_proof, proof) contain 4 leading zeroes?
-    #    guess = f'{last_proof}{proof}'.encode()
-    #    guess_hash = hashlib.sha256(guess).hexdigest()
-    #    print(guess_hash)
-    #    return guess_hash.startswith('0' * diff)
-    
+
     @staticmethod
     def validate_proof(hash, difficulty):
         binary_hash = format(int(hash, 16), '08b').zfill(32 * 8)
@@ -228,6 +226,7 @@ class Blockchain:
 # initiate the node
 app = Flask(__name__)
 owner = Owner()
+transaction_pool = Transaction_Pool()
 # generate a globally unique address for this node
 node_identifier = str(uuid4()).replace('-', '')
 # initiate the BlockchainMemory
@@ -262,12 +261,17 @@ def mine():
     #last_proof = last_block['proof']
     #proof = blockchain.proof_of_work(last_proof)
 
+
     # we must receive reward for finding the proof in form of receiving 1 Coin
-    blockchain.new_transaction([TransactionInput("trans0", 0)], [TransactionOutput(owner.public_key_hash, 1)])
+    # The output_index of the TxIn is the block height. This is to ensure that each coinbase transaction
+    # has a unique txId
+    coinbase_transaction = Transaction([TransactionInput("",last_block.index+1)],
+                                       [TransactionOutput(owner.public_key_hash, COINBASE_REWARD)])
+    transactions = transaction_pool.get_transactions_from_memory()
+    transactions.insert(0, coinbase_transaction.transaction_data)
+    transaction_pool.store_transactions_in_memory(transactions)
 
     # forge the new block by adding it to the chain
-    #previous_hash = blockchain.hash(last_block)
-    #block = blockchain.create_block(proof, previous_hash)
     block = blockchain.create_block(last_block)
 
     response = {
@@ -286,7 +290,7 @@ def mine():
 
 @app.route('/utxos/<user_public_key>', methods=['GET'])
 def get_utxos(user_public_key):
-    return jsonify(blockchain.get_user_utxos(user_public_key), 200)
+    return jsonify(blockchain.get_user_utxos(user_public_key)), 200
 
 @app.route('/utxos', methods=['GET'])
 def get_owner_utxos():
@@ -320,18 +324,14 @@ def new_transaction():
         if transaction_ver.is_new:
             transaction_ver.validate()
             transaction_ver.validate_funds()
-            # transaction.store()
+            transaction_ver.store()
             # transaction.broadcast()
     except TransactionVer_Exception as transaction_exception:
         return f'{transaction_exception}', 400
 
-    # create a new transaction
-    index = blockchain.new_transaction(
-        inputs=tx_inputs,
-        outputs=tx_outputs
-    )
     response = {
-        'message': f'Transaction will be added to the Block {index}',
+        'message': f'Transaction will be added to the Block {blockchain.last_block.index + 1}',
+        'transaction_hash': transaction.transaction_hash
     }
     return jsonify(response, 200)
 
