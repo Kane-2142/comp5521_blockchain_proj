@@ -30,6 +30,7 @@
 </details>
 
 <details><summary>References</summary>
+  
 1. https://gruyaume.medium.com/create-your-own-blockchain-using-python-merkle-tree-pt-2-f84478a30690
 2. https://gruyaume.medium.com/create-your-own-blockchain-using-python-transactions-and-security-pt-3-407e75d71acf
 </details>
