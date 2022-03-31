@@ -14,10 +14,10 @@
 |   - Transaction data                    | Completed     |               |
 | **Mining (3pts)**                       |               |               |
 |   - Proof-of-work (2pts)                | Completed     |               |
-|   - Dynamic Difficulty (1pts)           | Partial       |               |
+|   - Dynamic Difficulty (1pts)           | Completed     |               |
 | **Transaction (3pts, 1ea)**             |               |               |
-|   - pay-to-public-key-hash (P2PKH)      |               |               |
-|   - signatures and verify trans         |               |               |
+|   - pay-to-public-key-hash (P2PKH)      | Completed     |               |
+|   - signatures and verify trans         | Completed     |               |
 |   - coinbase transaction                |               |               |
 | **Network (3pts, 1ea)**                 |               |               |
 |   - broadcast new blocks and get blocks |               |               |
