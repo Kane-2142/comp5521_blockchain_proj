@@ -241,7 +241,17 @@ blockchain = Blockchain(owner)
 
 @app.route('/', methods=['GET'])
 def home():
-    return "Welcome to COMP5521 Blockchain Project"
+    Instruction = "Welcome to COMP5521 Blockchain Project. The following endpoints are now available:<br/>" \
+                  "1. /owner . Creates a private key if no private key is available, public key is then " \
+                  "derived from the private key.<br/>" \
+                  "2. /mine . Transaction inputs and outputs encrypted by SHA256, forging new block after " \
+                  "validation. Save the added block to the new blockchain. <br/>" \
+                  "3. /utxos/<user_public_key>. Query unspent transactions.<br/>" \
+                  "4. /transaction/<tx_id>. Query transaction details.<br/>" \
+                  "5. /transaction/new. Create new transactions.<br/>" \
+                  "6. /chain. Query the details of the blockchain.<br/>" \
+                  "7. /nodes/register. Register new nodes into the blockchain."
+    return Instruction, 200
 
 
 @app.route('/owner', methods=['GET'])
