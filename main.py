@@ -8,6 +8,7 @@ from uuid import uuid4
 from urllib.parse import urlparse
 from flask import Flask, jsonify, request
 from merkle_tree import get_merkle_root
+from blockchain_memory import BlockchainMemory
 from block import Block
 import time
 from transaction import Transaction, TransactionInput, TransactionOutput
@@ -211,14 +212,32 @@ class Blockchain:
         # xxx returns the full chain and a number of blocks
         pass
 
+    def apply_block_history(self, blockData):
+        new_block = Block(
+            index = blockData["index"],
+            timestamp = blockData["timestamp"],
+            previous_hash = blockData["previousHash"],
+            transactions = blockData["transactions"],
+            merkle_root = blockData["merkle_root"],
+            nonce = blockData["nonce"],
+            difficulty = blockData["difficulty"]
+
+        )
+        self.chain.append(new_block)
 
 # initiate the node
 app = Flask(__name__)
 owner = Owner()
 # generate a globally unique address for this node
 node_identifier = str(uuid4()).replace('-', '')
+# initiate the BlockchainMemory
+blockchainMemory = BlockchainMemory()
 # initiate the Blockchain
 blockchain = Blockchain(owner)
+# get block form memory
+# blockchainData = blockchainMemory.get_blockchain_from_memory()
+# for item in blockchainData:
+#     blockchain.apply_block_history(item)
 
 @app.route('/', methods=['GET'])
 def home():
@@ -260,6 +279,9 @@ def mine():
         'nonce': block.nonce,
         'previous_hash': block.previous_hash,
     }
+
+    blockchainMemory.store_blockchain_in_memory([item.toDict for item in blockchain.chain])
+    
     return jsonify(response, 200)
 
 @app.route('/utxos/<user_public_key>', methods=['GET'])
