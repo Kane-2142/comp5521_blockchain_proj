@@ -124,6 +124,7 @@ class Blockchain:
             )
             if Blockchain.validate_proof(block.hash, difficulty) == True:
                 return block
+            nonce += 1
     
     @staticmethod
     def get_difficulty(blockchain):
