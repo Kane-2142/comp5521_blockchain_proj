@@ -100,6 +100,26 @@ class Blockchain:
                 return block.get_transaction(transaction_hash)
         return {}
 
+    def get_user_utxos(self, user: str) -> dict:
+        return_dict = {
+            "user": user,
+            "total": 0,
+            "utxos": []
+        }
+        for block in reversed(self.chain):
+            for transaction in block.transactions:
+                for output in transaction["outputs"]:
+                    locking_script = output["locking_script"]
+                    for element in locking_script.split(" "):
+                        if not element.startswith("OP") and element == user:
+                            return_dict["total"] = return_dict["total"] + output["amount"]
+                            return_dict["utxos"].append(
+                                {
+                                    "amount": output["amount"],
+                                    "transaction_hash": transaction["transaction_hash"]
+                                }
+                            )
+        return return_dict
 
     #def proof_of_work(self, last_proof):
     #    # simple proof of work algorithm
@@ -227,6 +247,15 @@ def mine():
         'previous_hash': block.previous_hash,
     }
     return jsonify(response, 200)
+
+@app.route('/utxos/<user_public_key>', methods=['GET'])
+def get_utxos(user_public_key):
+    return jsonify(blockchain.get_user_utxos(user_public_key), 200)
+
+@app.route('/utxos', methods=['GET'])
+def get_owner_utxos():
+    return jsonify(blockchain.get_user_utxos(owner.public_key_hash)), 200
+
 
 @app.route('/transaction/<tx_id>', methods=['GET'])
 def get_transaction(tx_id):

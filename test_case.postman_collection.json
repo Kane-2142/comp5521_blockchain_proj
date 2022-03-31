@@ -154,6 +154,73 @@
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "get utxo",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:5000/utxos/recv_public_key",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "5000",
+					"path": [
+						"utxos",
+						"recv_public_key"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get owner utxo",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:5000/utxos",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "5000",
+					"path": [
+						"utxos"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get owner keys",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:5000/owner",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "5000",
+					"path": [
+						"owner"
+					]
+				}
+			},
+			"response": []
 		}
 	]
 }
