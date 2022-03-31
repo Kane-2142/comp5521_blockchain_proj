@@ -1,6 +1,6 @@
 import json
 import math
-from Crypto.Hash import SHA256
+from utils import calculate_hash
 
 class Node:
     def __init__(self, value: str, left_child=None, right_child=None):
@@ -8,12 +8,6 @@ class Node:
         self.left_child = left_child
         self.right_child = right_child
 
-
-def calculate_hash(data) -> str:
-    data = bytearray(data, "utf-8")
-    h = SHA256.new()
-    h.update(data)
-    return h.hexdigest()
 
 def compute_tree_depth(number_of_leaves: int) -> int:
     return math.ceil(math.log2(number_of_leaves))

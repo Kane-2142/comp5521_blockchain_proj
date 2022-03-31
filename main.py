@@ -10,6 +10,8 @@ from flask import Flask, jsonify, request
 from merkle_tree import get_merkle_root
 from block import Block
 import time
+from transaction import Transaction, TransactionInput, TransactionOutput
+from owner import Owner
 
 transactions = []
 TPCoins = []
@@ -22,13 +24,14 @@ def get_timestamp():
   return round(time.time())
 
 class Blockchain:
-    def __init__(self):
+    def __init__(self, owner):
         self.chain = []
         self.current_transactions = []
-        self.current_transactions.append({
-            "sender": 0,
-            "recient": 0,
-            "data": 0,})
+        self.owner = owner
+        input_0 = TransactionInput("trans0", 0)
+        output_0 = TransactionOutput(owner.public_key_hash, 50)
+        transaction_0 = Transaction([input_0], [output_0])
+        self.current_transactions.append(transaction_0.transaction_data)
         self.nodes = set()
         #self.create_block(proof=1, previous_hash='0')
         
@@ -83,14 +86,12 @@ class Blockchain:
         # returns last block in the chain
         return self.chain[-1]
 
-    def new_transaction(self, sender, recipient, amount):
+    def new_transaction(self, inputs: [TransactionInput], outputs: [TransactionOutput]):
         # adds a new transaction into the list of transactions
         # these transactions go into the next mined block
-        self.current_transactions.append({
-            "sender": sender,
-            "recient": recipient,
-            "data": amount,
-        })
+        transaction = Transaction(inputs, outputs)
+        transaction.sign(owner)
+        self.current_transactions.append(transaction.transaction_data)
         return int(self.last_block.index) + 1
 
     #def proof_of_work(self, last_proof):
@@ -172,14 +173,27 @@ class Blockchain:
 
 # initiate the node
 app = Flask(__name__)
+owner = Owner()
 # generate a globally unique address for this node
 node_identifier = str(uuid4()).replace('-', '')
 # initiate the Blockchain
-blockchain = Blockchain()
+blockchain = Blockchain(owner)
 
 @app.route('/', methods=['GET'])
 def home():
     return "Welcome to COMP5521 Blockchain Project"
+
+
+@app.route('/owner', methods=['GET'])
+def show_owner():
+    response = {
+        'private_key': owner.private_key.export_key().decode('utf-8'),
+        'public_key_hash': owner.public_key_hash,
+        'public_key_hex': owner.public_key_hex,
+    }
+    print (response)
+    return jsonify(response), 200
+
 
 @app.route('/mine', methods=['GET'])
 def mine():
@@ -189,11 +203,7 @@ def mine():
     #proof = blockchain.proof_of_work(last_proof)
 
     # we must receive reward for finding the proof in form of receiving 1 Coin
-    blockchain.new_transaction(
-        sender=0,
-        recipient=node_identifier,
-        amount=1,
-    )
+    blockchain.new_transaction([TransactionInput("trans0", 0)], [TransactionOutput(owner.public_key_hash, 1)])
 
     # forge the new block by adding it to the chain
     #previous_hash = blockchain.hash(last_block)
@@ -215,16 +225,15 @@ def mine():
 @app.route('/transaction/new', methods=['POST'])
 def new_transaction():
     values = request.get_json()
-    required = ['sender', 'recipient', 'amount']
+    required = ['inputs', 'outputs']
 
     if not all(k in values for k in required):
         return 'Missing values.', 400
 
     # create a new transaction
     index = blockchain.new_transaction(
-        sender=values['sender'],
-        recipient=values['recipient'],
-        amount=values['amount']
+        inputs=values['inputs'],
+        outputs=values['outputs']
     )
 
     response = {
