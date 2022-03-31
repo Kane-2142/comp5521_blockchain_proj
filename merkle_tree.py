@@ -1,6 +1,6 @@
 import json
 import math
-from Crypto.Hash import RIPEMD160, SHA256
+from Crypto.Hash import SHA256
 
 class Node:
     def __init__(self, value: str, left_child=None, right_child=None):
@@ -9,17 +9,11 @@ class Node:
         self.right_child = right_child
 
 
-def calculate_hash(data, hash_function: str = "sha256") -> str:
+def calculate_hash(data) -> str:
     data = bytearray(data, "utf-8")
-    if hash_function == "sha256":
-        h = SHA256.new()
-        h.update(data)
-        return h.hexdigest()
-    if hash_function == "ripemd160":
-        h = RIPEMD160.new()
-        h.update(data)
-        return h.hexdigest()
-
+    h = SHA256.new()
+    h.update(data)
+    return h.hexdigest()
 
 def compute_tree_depth(number_of_leaves: int) -> int:
     return math.ceil(math.log2(number_of_leaves))
