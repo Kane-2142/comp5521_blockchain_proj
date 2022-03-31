@@ -12,6 +12,7 @@ from block import Block
 import time
 from transaction import Transaction, TransactionInput, TransactionOutput
 from owner import Owner
+from transaction_verifier import Transaction_Verifier, TransactionVer_Exception
 
 transactions = []
 TPCoins = []
@@ -120,6 +121,16 @@ class Blockchain:
                                 }
                             )
         return return_dict
+
+    def get_transaction_from_utxo(self, utxo_hash: str) -> dict:
+        for block in reversed(self.chain):
+            for transaction in block.transactions:
+                if utxo_hash == transaction["transaction_hash"]:
+                    return transaction
+
+    def get_locking_script_from_utxo(self, utxo_hash: str, utxo_index: int):
+        transaction_data = self.get_transaction_from_utxo(utxo_hash)
+        return transaction_data["outputs"][utxo_index]["locking_script"]
 
     #def proof_of_work(self, last_proof):
     #    # simple proof of work algorithm
@@ -273,16 +284,27 @@ def new_transaction():
     tx_inputs = []
     tx_outputs= []
     for i in inputs:
-        tx_inputs.append(TransactionInput(i['txid'],i['vout']))
+        tx_inputs.append(TransactionInput(i['transaction_hash'],i['output_index']))
     for o in outputs:
         tx_outputs.append(TransactionOutput(o['receiver'], o['amount']))
+    transaction = Transaction(tx_inputs, tx_outputs)
+    transaction.sign(owner)
+    try:
+        transaction_ver = Transaction_Verifier(blockchain)
+        transaction_ver.receive(transaction.transaction_data)
+        if transaction_ver.is_new:
+            transaction_ver.validate()
+            transaction_ver.validate_funds()
+            # transaction.store()
+            # transaction.broadcast()
+    except TransactionVer_Exception as transaction_exception:
+        return f'{transaction_exception}', 400
 
     # create a new transaction
     index = blockchain.new_transaction(
         inputs=tx_inputs,
         outputs=tx_outputs
     )
-
     response = {
         'message': f'Transaction will be added to the Block {index}',
     }

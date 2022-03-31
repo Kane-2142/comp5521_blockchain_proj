@@ -53,7 +53,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"inputs\": \"[{\\\"txid\\\":\\\"txid-0\\\",\\\"vout\\\": 1}]\",\r\n    \"outputs\": \"[{\\\"receiver\\\":\\\"recv_public_key\\\",\\\"amount\\\": 1.0}]\"\r\n}",
+					"raw": "{\r\n    \"inputs\": \"[{\\\"transaction_hash\\\":\\\"txid-0\\\",\\\"output_index\\\": 1}]\",\r\n    \"outputs\": \"[{\\\"receiver\\\":\\\"recv_public_key\\\",\\\"amount\\\": 1.0}]\"\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -138,7 +138,7 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://127.0.0.1:5000/transaction/<trans_hash>",
+					"raw": "http://127.0.0.1:5000/transaction/fb5fb93e8e5d231510739174dccc5a82537b91602f46738c649c4487708531cc",
 					"protocol": "http",
 					"host": [
 						"127",
@@ -149,7 +149,7 @@
 					"port": "5000",
 					"path": [
 						"transaction",
-						"<trans_hash>"
+						"fb5fb93e8e5d231510739174dccc5a82537b91602f46738c649c4487708531cc"
 					]
 				}
 			},
