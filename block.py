@@ -39,3 +39,11 @@ class Block:
     @property
     def toJSON(self):
         return json.dumps(self.toDict, sort_keys=True, indent=4)
+
+
+    def get_transaction(self, transaction_hash: dict) -> dict:
+        current_block = self
+        for transaction in current_block.transactions:
+            if transaction["transaction_hash"] == transaction_hash:
+                return transaction
+        return {}

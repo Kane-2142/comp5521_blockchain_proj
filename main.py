@@ -94,6 +94,13 @@ class Blockchain:
         self.current_transactions.append(transaction.transaction_data)
         return int(self.last_block.index) + 1
 
+    def get_transaction(self, transaction_hash):
+        for block in reversed(self.chain):
+            if block.get_transaction(transaction_hash):
+                return block.get_transaction(transaction_hash)
+        return {}
+
+
     #def proof_of_work(self, last_proof):
     #    # simple proof of work algorithm
     #    # find a number p' such as hash(pp') containing leading 4 zeros where p is the previous p'
@@ -221,6 +228,9 @@ def mine():
     }
     return jsonify(response, 200)
 
+@app.route('/transaction/<tx_id>', methods=['GET'])
+def get_transaction(tx_id):
+    return jsonify(blockchain.get_transaction(tx_id), 200)
 
 @app.route('/transaction/new', methods=['POST'])
 def new_transaction():
