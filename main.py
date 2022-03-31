@@ -157,7 +157,8 @@ class Blockchain:
     
     @staticmethod
     def validate_proof(hash, difficulty):
-        return hash.startswith('0' * difficulty)
+        binary_hash = format(int(hash, 16), '08b').zfill(32 * 8)
+        return binary_hash.startswith('0' * difficulty)
 
     def register_node(self, address):
         # add a new node to the list of nodes
