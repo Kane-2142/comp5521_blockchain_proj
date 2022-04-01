@@ -8,7 +8,6 @@ from uuid import uuid4
 from urllib.parse import urlparse
 from flask import Flask, jsonify, request
 from merkle_tree import get_merkle_root
-from blockchain_memory import BlockchainMemory
 from blockchain_db import BlockchainDB
 from block import Block
 import time
