@@ -80,7 +80,7 @@ class Transaction_Verifier:
     def get_total_amount_in_inputs(self) -> int:
         total_in = 0
         for tx_input in self.inputs:
-            transaction_data = self.blockchain.get_transaction_from_utxo(tx_input["transaction_hash"])
+            transaction_data = self.blockchain.get_transaction_from_utxo(tx_input["transaction_hash"], tx_input["output_index"])
             utxo_amount = transaction_data["outputs"][tx_input["output_index"]]["amount"]
             total_in = total_in + utxo_amount
         return total_in

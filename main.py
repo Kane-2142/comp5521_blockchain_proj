@@ -14,7 +14,7 @@ import time
 from transaction import Transaction, TransactionInput, TransactionOutput
 from owner import Owner
 
-from storage import Transaction_Pool
+from storage import Transaction_Pool, Utxo_Pool
 from transaction_verifier import Transaction_Verifier, TransactionVer_Exception
 import sys
 
@@ -41,12 +41,14 @@ class Blockchain:
     def __init__(self, owner):
         self.chain = []
         self.transaction_pool = Transaction_Pool()
+        self.utxo_pool = Utxo_Pool()
         self.owner = owner
         self.nodes = set()
         #self.create_block(proof=1, previous_hash='0')
         
-        # Create genesis block
+
         if not blockchainData:
+            # Create genesis block
             self.chain.append(Block(
                 index = 0,
                 previous_hash = '0',
@@ -54,6 +56,8 @@ class Blockchain:
                 nonce = 0,
                 transactions = []
             ))
+            # Clear the utxo pool
+            self.utxo_pool.clear_utxos_from_memory()
     
     def create_block(self, previousBlock):
         transactions = self.transaction_pool.get_transactions_from_memory()
@@ -66,7 +70,12 @@ class Blockchain:
                 nonce = 0,
             )
             new_block = self.proof_of_work(self.chain, transactions, get_merkle_root(transactions))
+            # empty the transaction pool
             self.transaction_pool.clear_transactions_from_memory()
+            # transaction confirmed, add the utxos to the utxo pool.
+            for transaction in transactions:
+                for index, output in enumerate(transaction["outputs"]):
+                    self.utxo_pool.add_utxo(transaction["transaction_hash"], index)
             self.chain.append(new_block)
             return new_block
         else:
@@ -80,82 +89,61 @@ class Blockchain:
         # returns last block in the chain
         return self.chain[-1]
 
-    def get_transaction(self, transaction_hash):
+    def get_transaction_from_chain(self, transaction_hash) -> dict:
         result = {}
         for block in reversed(self.chain):
             if block.get_transaction(transaction_hash):
                 result["confirmation"] = self.last_block.index - block.index + 1
                 result["transaction_data"] = block.get_transaction(transaction_hash)
                 return result
-            else:
-                transactions = self.transaction_pool.get_transactions_from_memory()
-                if transactions:
-                    for tx in transactions:
-                        if tx["transaction_hash"] == transaction_hash:
-                            result["confirmation"] = "pending"
-                            result["transaction_data"] = tx
-                            return result
-        return {}
+        return result
 
-    def is_transaction_spent(self, transaction_hash):
-        for block in reversed(self.chain):
-            if block.transactions:
-                for transaction in block.transactions:
-                    for inputs in transaction["inputs"]:
-                        if transaction_hash == inputs["transaction_hash"]:
-                            return True
-        return False
+    def get_transaction_from_pool(self, transaction_hash) -> dict:
+        result = {}
+        transactions = self.transaction_pool.get_transactions_from_memory()
+        if transactions:
+            for tx in transactions:
+                if tx["transaction_hash"] == transaction_hash:
+                    result["confirmation"] = "pending"
+                    result["transaction_data"] = tx
+                    return result
+        return result
 
+    def get_transaction(self, transaction_hash):
+        result = {}
+        result = self.get_transaction_from_chain(transaction_hash)
+        if not result:
+            result = self.get_transaction_from_pool(transaction_hash)
+        return result
 
     def get_user_utxos(self, user: str) -> dict:
-        outputs = []
-        for block in reversed(self.chain):
-            if block.transactions:
-                for transaction in block.transactions:
-                    for output in transaction["outputs"]:
-                        locking_script = output["locking_script"]
-                        for element in locking_script.split(" "):
-                            if not element.startswith("OP") and element == user:
-                                outputs.append({
-                                        "amount": output["amount"],
-                                        "transaction_hash": transaction["transaction_hash"]
-                                })
         unspent_outputs = []
         unspent_amount = 0
-        for output in outputs:
-            if not self.is_transaction_spent(output["transaction_hash"]):
-                unspent_amount = unspent_amount + output["amount"]
-                unspent_outputs.append({
-                    "amount": output["amount"],
-                    "transaction_hash": output["transaction_hash"]
-                })
+        utxos = self.utxo_pool.get_utxos_from_memory()
+        for utxo in utxos:
+            transaction = self.get_transaction_from_chain(utxo["transaction_hash"])["transaction_data"]
+            output = transaction["outputs"][utxo["output_index"]]
+            locking_script = output["locking_script"]
+            for element in locking_script.split(" "):
+                if not element.startswith("OP") and element == user:
+                    unspent_outputs.append({"amount": output["amount"],
+                                            "transaction_hash": transaction["transaction_hash"]
+                    })
         return {"user": user,
                 "total": unspent_amount,
                 "utxos": unspent_outputs}
 
-    def get_transaction_from_utxo(self, utxo_hash: str) -> dict:
-        for block in reversed(self.chain):
-            for transaction in block.transactions:
-                if utxo_hash == transaction["transaction_hash"]:
-                    return transaction
+    def get_transaction_from_utxo(self, utxo_hash: str, utxo_index: int) -> dict:
+        if self.utxo_pool.is_utxo_exist(utxo_hash, utxo_index):
+            for block in reversed(self.chain):
+                for transaction in block.transactions:
+                    if utxo_hash == transaction["transaction_hash"]:
+                        return transaction
+        return {}
 
     def get_locking_script_from_utxo(self, utxo_hash: str, utxo_index: int):
-        transaction_data = self.get_transaction_from_utxo(utxo_hash)
+        transaction_data = self.get_transaction_from_utxo(utxo_hash, utxo_index)
         return transaction_data["outputs"][utxo_index]["locking_script"]
-
-    #def proof_of_work(self, last_proof):
-    #    # simple proof of work algorithm
-    #    # find a number p' such as hash(pp') containing leading 4 zeros where p is the previous p'
-    #    # p is the previous proof and p' is the new proof
-    #    proof = 0
-    #    diff = self.get_difficulty()
-    #    while self.validate_proof(diff, last_proof, proof) is False:
-    #        proof += 1
-    #    return proof
-    
-    #def get_difficulty(self):
-    #    diff = len(self.chain) 
-    #    return diff
 
     @staticmethod
     def proof_of_work(blockchain, transactions, merkle_root):
@@ -287,6 +275,7 @@ class Blockchain:
 app = Flask(__name__)
 owner = Owner()
 transaction_pool = Transaction_Pool()
+utxos_pool = Utxo_Pool()
 # generate a globally unique address for this node
 node_identifier = str(uuid4()).replace('-', '')
 # initiate the BlockchainMemory
@@ -298,6 +287,8 @@ blockchain = Blockchain(owner)
 # append block form memory
 for item in blockchainData:
     blockchain.apply_block_history(item)
+    utxos_pool.apply_block_history(item["transactions"])
+
 
 @app.route('/', methods=['GET'])
 def home():
@@ -367,6 +358,9 @@ def get_utxos(user_public_key):
 def get_owner_utxos():
     return jsonify(blockchain.get_user_utxos(owner.public_key_hash)), 200
 
+@app.route('/utxos_list', methods=['GET'])
+def get_utxos_list():
+    return jsonify(utxos_pool.get_utxos_from_memory()), 200
 
 @app.route('/transaction/<tx_id>', methods=['GET'])
 def get_transaction(tx_id):
@@ -400,6 +394,9 @@ def new_transaction():
     except TransactionVer_Exception as transaction_exception:
         return f'{transaction_exception}', 400
 
+    # remove the utxo from the utxo pool (even though transaction not yet confirmed), to avoid double spending
+    for tx_input in tx_inputs:
+        utxos_pool.remove_utxo(tx_input)
     response = {
         'message': f'Transaction will be added to the Block {blockchain.last_block.index + 1}',
         'transaction_hash': transaction.transaction_hash
