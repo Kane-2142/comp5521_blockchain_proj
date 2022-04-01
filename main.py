@@ -287,9 +287,11 @@ blockchainHistory = blockchainDB.get_all_blocks()
 # append blocks form blockchainHistory
 if blockchainDB.get_length()==0:
     blockchain.create_first_block()
+    utxos_pool.clear_utxos_from_memory()
 else:
     for block in blockchainHistory:
         blockchain.apply_block_history(block)
+        utxos_pool.apply_block_history(block["transactions"])
 
 
 @app.route('/', methods=['GET'])
@@ -440,6 +442,8 @@ def register_nodes():
 @app.route('/delete/chain', methods=['GET'])
 def delete_chain():
     blockchainDB.delect_all_blocks()
+    utxos_pool.clear_utxos_from_memory()
+    transaction_pool.clear_transactions_from_memory()
     return jsonify("blockchain deleted"), 200
 
 
