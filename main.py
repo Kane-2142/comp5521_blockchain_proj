@@ -318,8 +318,8 @@ def new_transaction():
 
     if not all(k in values for k in required):
         return 'Missing values.', 400
-    inputs = json.loads(values['inputs'])
-    outputs = json.loads(values['outputs'])
+    inputs = values['inputs']
+    outputs = values['outputs']
     tx_inputs = []
     tx_outputs= []
     for i in inputs:

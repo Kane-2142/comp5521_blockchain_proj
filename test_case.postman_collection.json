@@ -1,7 +1,7 @@
 {
 	"info": {
-		"_postman_id": "aa81e046-9db4-4d0d-9a1e-25a94ad023fa",
-		"name": "comp5521_blockchain_proj Copy 2",
+		"_postman_id": "a1964ae8-d044-4517-a460-21eb95c36a1f",
+		"name": "comp5521_blockchain_proj",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -9,7 +9,7 @@
 			"name": "Step 1: Register Nodes",
 			"item": [
 				{
-					"name": "register nodes in node 1",
+					"name": "1.1 register nodes in node 1",
 					"request": {
 						"method": "POST",
 						"header": [],
@@ -41,7 +41,7 @@
 					"response": []
 				},
 				{
-					"name": "register nodes in node 2",
+					"name": "1.2 register nodes in node 2",
 					"request": {
 						"method": "POST",
 						"header": [],
@@ -73,7 +73,7 @@
 					"response": []
 				},
 				{
-					"name": "register nodes in node 3",
+					"name": "1.3 register nodes in node 3",
 					"request": {
 						"method": "POST",
 						"header": [],
@@ -103,6 +103,70 @@
 						}
 					},
 					"response": []
+				}
+			]
+		},
+		{
+			"name": "Step 2: Create transaction",
+			"item": [
+				{
+					"name": "2.1 node 1",
+					"item": [
+						{
+							"name": "2.1.1 mine",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://127.0.0.1:3000/mine",
+									"protocol": "http",
+									"host": [
+										"127",
+										"0",
+										"0",
+										"1"
+									],
+									"port": "3000",
+									"path": [
+										"mine"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "2.1.2 create transaction in node 1",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"inputs\": [\r\n        {\r\n            \"transaction_hash\": \"\",\r\n            \"output_index\": \"\"\r\n        }\r\n    ],\r\n    \"outputs\": [\r\n        {\r\n            \"receiver\": \"\",\r\n            \"amount\": \"1.0\"\r\n        }\r\n    ]\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://127.0.0.1:3000/transaction/new",
+									"protocol": "http",
+									"host": [
+										"127",
+										"0",
+										"0",
+										"1"
+									],
+									"port": "3000",
+									"path": [
+										"transaction",
+										"new"
+									]
+								}
+							},
+							"response": []
+						}
+					]
 				}
 			]
 		},
@@ -151,13 +215,13 @@
 					"response": []
 				},
 				{
-					"name": "transaction/new",
+					"name": "create transaction",
 					"request": {
 						"method": "POST",
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"inputs\": \"[{\\\"transaction_hash\\\":\\\"txid-0\\\",\\\"output_index\\\": 1}]\",\r\n    \"outputs\": \"[{\\\"receiver\\\":\\\"recv_public_key\\\",\\\"amount\\\": 1.0}]\"\r\n}",
+							"raw": "{\r\n    \"sender\": \"sender1\",\r\n    \"recipient\": \"recipient1\",\r\n    \"amount\": 1.0\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -177,29 +241,6 @@
 							"path": [
 								"transaction",
 								"new"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "get transaction",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "http://127.0.0.1:5000/transaction/fb5fb93e8e5d231510739174dccc5a82537b91602f46738c649c4487708531cc",
-							"protocol": "http",
-							"host": [
-								"127",
-								"0",
-								"0",
-								"1"
-							],
-							"port": "5000",
-							"path": [
-								"transaction",
-								"fb5fb93e8e5d231510739174dccc5a82537b91602f46738c649c4487708531cc"
 							]
 						}
 					},
@@ -265,29 +306,6 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://127.0.0.1:5000/utxos/recv_public_key",
-							"protocol": "http",
-							"host": [
-								"127",
-								"0",
-								"0",
-								"1"
-							],
-							"port": "5000",
-							"path": [
-								"utxos",
-								"recv_public_key"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "get owner utxo",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
 							"raw": "http://127.0.0.1:5000/utxos",
 							"protocol": "http",
 							"host": [
@@ -305,7 +323,7 @@
 					"response": []
 				},
 				{
-					"name": "get owner keys",
+					"name": "get owner",
 					"request": {
 						"method": "GET",
 						"header": [],
@@ -321,6 +339,41 @@
 							"port": "5000",
 							"path": [
 								"owner"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get transaction",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"sender\": \"sender1\",\r\n    \"recipient\": \"recipient1\",\r\n    \"amount\": 1.0\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:5000/transaction/{{tx_id}}",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5000",
+							"path": [
+								"transaction",
+								"{{tx_id}}"
 							]
 						}
 					},
