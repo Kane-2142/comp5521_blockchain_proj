@@ -323,6 +323,18 @@ def show_owner():
     return jsonify(response), 200
 
 
+@app.route('/owner/change', methods=['POST'])
+def change_owner():
+    global owner
+    values = request.get_json()
+    if not 'private_key' in values:
+        return 'Missing values.', 400
+    private_key = values['private_key']
+    owner = Owner(private_key)
+    response = {'message': "private key changed"}
+    return jsonify(response), 200
+
+
 @app.route('/mine', methods=['GET'])
 def mine():
     # first we need to run the proof of work algorithm to calculate the new proof..
