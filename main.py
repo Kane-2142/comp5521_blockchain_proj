@@ -273,8 +273,12 @@ class Blockchain:
 # initiate the node
 app = Flask(__name__)
 owner = Owner()
+# initiate the Transaction Pool
 transaction_pool = Transaction_Pool()
+# initiate the UTXO State
 utxos_pool = Utxo_Pool()
+utxos_pool.clear_utxos_from_memory()
+
 # generate a globally unique address for this node
 node_identifier = str(uuid4()).replace('-', '')
 
