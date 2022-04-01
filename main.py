@@ -38,11 +38,10 @@ class BlockException(Exception):
 
 
 class Blockchain:
-    def __init__(self, owner):
+    def __init__(self):
         self.chain = []
         self.transaction_pool = Transaction_Pool()
         self.utxo_pool = Utxo_Pool()
-        self.owner = owner
         self.nodes = set()
         #self.create_block(proof=1, previous_hash='0')
 
@@ -283,7 +282,7 @@ utxos_pool.clear_utxos_from_memory()
 node_identifier = str(uuid4()).replace('-', '')
 
 # initiate the Blockchain
-blockchain = Blockchain(owner)
+blockchain = Blockchain()
 # initiate the BlockchainDB
 blockchainDB = BlockchainDB()
 # get all blocks form DB
