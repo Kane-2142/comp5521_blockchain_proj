@@ -8,7 +8,7 @@ from uuid import uuid4
 from urllib.parse import urlparse
 from flask import Flask, jsonify, request
 from merkle_tree import get_merkle_root
-from blockchain_memory import BlockchainMemory
+from blockchain_db import BlockchainDB
 from block import Block
 import time
 from transaction import Transaction, TransactionInput, TransactionOutput
@@ -45,19 +45,18 @@ class Blockchain:
         self.owner = owner
         self.nodes = set()
         #self.create_block(proof=1, previous_hash='0')
-        
 
-        if not blockchainData:
-            # Create genesis block
-            self.chain.append(Block(
-                index = 0,
-                previous_hash = '0',
-                timestamp = get_timestamp(),
-                nonce = 0,
-                transactions = []
-            ))
-            # Clear the utxo pool
-            self.utxo_pool.clear_utxos_from_memory()
+    # Create genesis block
+    def create_first_block(self):
+        first_block = Block(
+            index=0,
+            previous_hash='0',
+            timestamp=get_timestamp(),
+            nonce=0,
+            transactions=[]
+        )
+        self.chain.append(first_block)
+        blockchainDB.add_blocks(first_block)
     
     def create_block(self, previousBlock):
         transactions = self.transaction_pool.get_transactions_from_memory()
@@ -278,16 +277,19 @@ transaction_pool = Transaction_Pool()
 utxos_pool = Utxo_Pool()
 # generate a globally unique address for this node
 node_identifier = str(uuid4()).replace('-', '')
-# initiate the BlockchainMemory
-blockchainMemory = BlockchainMemory()
-# get block form memory
-blockchainData = blockchainMemory.get_blockchain_from_memory()
+
 # initiate the Blockchain
 blockchain = Blockchain(owner)
-# append block form memory
-for item in blockchainData:
-    blockchain.apply_block_history(item)
-    utxos_pool.apply_block_history(item["transactions"])
+# initiate the BlockchainDB
+blockchainDB = BlockchainDB()
+# get all blocks form DB
+blockchainHistory = blockchainDB.get_all_blocks()
+# append blocks form blockchainHistory
+if blockchainDB.get_length()==0:
+    blockchain.create_first_block()
+else:
+    for block in blockchainHistory:
+        blockchain.apply_block_history(block)
 
 
 @app.route('/', methods=['GET'])
@@ -346,7 +348,7 @@ def mine():
         'previous_hash': block.previous_hash,
     }
 
-    blockchainMemory.store_blockchain_in_memory([item.toDict for item in blockchain.chain])
+    blockchainDB.add_blocks(block)
     
     return jsonify(response, 200)
 
@@ -433,6 +435,12 @@ def register_nodes():
     }
 
     return jsonify(response), 201
+
+
+@app.route('/delete/chain', methods=['GET'])
+def delete_chain():
+    blockchainDB.delect_all_blocks()
+    return jsonify("blockchain deleted"), 200
 
 
 if __name__ == '__main__':
