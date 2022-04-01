@@ -8,6 +8,10 @@ MEMPOOL_FILE = "transactions.txt"
 class Transaction_Pool:
     def __init__(self):
         self.file_name = MEMPOOL_FILE
+        # Create an empty file if not exists
+        if not os.path.exists(self.file_name):
+            file_obj = open(self.file_name, "wb")
+            file_obj.close()
 
     def get_transactions_from_memory(self) -> list:
         logging.info("Getting transaction from memory")
