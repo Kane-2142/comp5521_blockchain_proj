@@ -46,13 +46,14 @@ class Blockchain:
         #self.create_block(proof=1, previous_hash='0')
         
         # Create genesis block
-        self.chain.append(Block(
-            index = 0,
-            previous_hash = '0',
-            timestamp = get_timestamp(),
-            nonce = 0,
-            transactions = []
-        ))
+        if not blockchainData:
+            self.chain.append(Block(
+                index = 0,
+                previous_hash = '0',
+                timestamp = get_timestamp(),
+                nonce = 0,
+                transactions = []
+            ))
     
     def create_block(self, previousBlock):
         transactions = self.transaction_pool.get_transactions_from_memory()
@@ -231,12 +232,13 @@ transaction_pool = Transaction_Pool()
 node_identifier = str(uuid4()).replace('-', '')
 # initiate the BlockchainMemory
 blockchainMemory = BlockchainMemory()
+# get block form memory
+blockchainData = blockchainMemory.get_blockchain_from_memory()
 # initiate the Blockchain
 blockchain = Blockchain(owner)
-# get block form memory
-# blockchainData = blockchainMemory.get_blockchain_from_memory()
-# for item in blockchainData:
-#     blockchain.apply_block_history(item)
+# append block form memory
+for item in blockchainData:
+    blockchain.apply_block_history(item)
 
 @app.route('/', methods=['GET'])
 def home():
