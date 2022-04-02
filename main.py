@@ -514,8 +514,9 @@ if __name__ == '__main__':
         # initiate the BlockchainMemory
         blockchainMemory = BlockchainMemory()
         # initiate the BlockchainDB
-        #TODO
-        #blockchainDB = BlockchainDB()
+        blockchainDB = BlockchainDB()
+        # initiate the UTXO State
+        utxo_pool = Utxo_Pool()
 
     # initiate the Blockchain
     blockchain = Blockchain(owner,
@@ -547,7 +548,6 @@ if __name__ == '__main__':
     else:
         # Create genesis block
         blockchain.create_first_block()
-        # initiate the UTXO State
         utxo_pool.clear_utxos_from_memory()
 
     app.run(port=port_no)
