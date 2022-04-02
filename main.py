@@ -8,6 +8,7 @@ from uuid import uuid4
 from urllib.parse import urlparse
 from flask import Flask, jsonify, request
 from merkle_tree import get_merkle_root
+from blockchain_memory import BlockchainMemory
 from blockchain_db import BlockchainDB
 from block import Block
 import time
@@ -17,7 +18,7 @@ from owner import Owner
 from storage import Transaction_Pool, Utxo_Pool
 from transaction_verifier import Transaction_Verifier, TransactionVer_Exception
 import sys
-
+import requests
 
 transactions = []
 TPCoins = []
@@ -38,10 +39,13 @@ class BlockException(Exception):
 
 
 class Blockchain:
-    def __init__(self):
+    def __init__(self, owner, transaction_pool=None, blockchainMemory=None, blockchainDB=None, utxo_pool=None):
         self.chain = []
-        self.transaction_pool = Transaction_Pool()
-        self.utxo_pool = Utxo_Pool()
+        self.transaction_pool = transaction_pool
+        self.utxo_pool = utxo_pool
+        self.blockchainMemory = blockchainMemory
+        self.blockchainDB = blockchainDB
+        self.owner = owner
         self.nodes = set()
         #self.create_block(proof=1, previous_hash='0')
 
@@ -55,7 +59,7 @@ class Blockchain:
             transactions=[]
         )
         self.chain.append(first_block)
-        blockchainDB.add_blocks(first_block)
+        #blockchainDB.add_blocks(first_block)
     
     def create_block(self, previousBlock):
         transactions = self.transaction_pool.get_transactions_from_memory()
@@ -197,25 +201,24 @@ class Blockchain:
         # xxx returns the full chain and a number of blocks
         pass
       
-    def hash(self, block):
-        # hashes a block
-        # also make sure that the transactions are ordered otherwise we will have insonsistent hashes!
-        block_string = json.dumps(block, sort_keys=True).encode()
-        return hashlib.sha256(block_string).hexdigest()
+    #def hash(self, block):
+    #    # hashes a block
+    #    # also make sure that the transactions are ordered otherwise we will have insonsistent hashes!
+    #    block_string = json.dumps(block, sort_keys=True).encode()
+    #    return hashlib.sha256(block_string).hexdigest()
       
     def valid_chain(self, chain):
-
         # determine if a given blockchain is valid
-        last_block = chain[0]
+        last_block = Block.fromDict(chain[0])
         current_index = 1
 
         while current_index < len(chain):
-            block = chain[current_index]
+            block = Block.fromDict(chain[current_index])
             # check that the hash of the block is correct
-            if block['previousHash'] != self.hash(last_block):
+            if last_block.previous_hash != block.hash:
                 return False
             # check that the proof of work is correct
-            if not self.valid_proof(last_block['proof'], block['proof']):
+            if not self.validate_proof(last_block.hash, last_block.difficulty):
                 return False
 
             last_block = block
@@ -260,7 +263,7 @@ class Blockchain:
         new_block = Block(
             index = blockData["index"],
             timestamp = blockData["timestamp"],
-            previous_hash = blockData["previousHash"],
+            previous_hash = blockData["previous_hash"],
             transactions = blockData["transactions"],
             merkle_root = blockData["merkle_root"],
             nonce = blockData["nonce"],
@@ -268,34 +271,31 @@ class Blockchain:
 
         )
         self.chain.append(new_block)
+    
+    def save_blockchain(self):
+        if self.blockchainMemory is not None:
+            self.blockchainMemory.store_blockchain_in_memory([item.toDict for item in self.chain])
+        elif self.blockchainDB is not None:
+            self.blockchainDB.delect_all_blocks()
+            for block in self.chain:
+                self.blockchainDB.add_blocks(block)
+    
+    def replace_blockchain(self, chain):
+        self.chain = []
+        for item in chain:
+            self.apply_block_history(item)
+        self.save_blockchain()
 
 # initiate the node
 app = Flask(__name__)
 owner = Owner()
-# initiate the Transaction Pool
-transaction_pool = Transaction_Pool()
-# initiate the UTXO State
-utxos_pool = Utxo_Pool()
-utxos_pool.clear_utxos_from_memory()
-
+transaction_pool = None
+utxo_pool = None
+blockchain = None
+blockchainMemory = None
+blockchainDB = None
 # generate a globally unique address for this node
 node_identifier = str(uuid4()).replace('-', '')
-
-# initiate the Blockchain
-blockchain = Blockchain()
-# initiate the BlockchainDB
-blockchainDB = BlockchainDB()
-# get all blocks form DB
-blockchainHistory = blockchainDB.get_all_blocks()
-# append blocks form blockchainHistory
-if blockchainDB.get_length()==0:
-    blockchain.create_first_block()
-    utxos_pool.clear_utxos_from_memory()
-else:
-    for block in blockchainHistory:
-        blockchain.apply_block_history(block)
-        utxos_pool.apply_block_history(block["transactions"])
-
 
 @app.route('/', methods=['GET'])
 def home():
@@ -365,7 +365,8 @@ def mine():
         'previous_hash': block.previous_hash,
     }
 
-    blockchainDB.add_blocks(block)
+    #TODO
+    #blockchainDB.add_blocks(block)
     
     return jsonify(response, 200)
 
@@ -456,12 +457,97 @@ def register_nodes():
 
 @app.route('/delete/chain', methods=['GET'])
 def delete_chain():
-    blockchainDB.delect_all_blocks()
+    if blockchainMemory is not None:
+        blockchainMemory.clear_blockchain_from_memory()
+    if blockchainDB is not None:
+        blockchainDB.delect_all_blocks()
     utxos_pool.clear_utxos_from_memory()
     transaction_pool.clear_transactions_from_memory()
+
     return jsonify("blockchain deleted"), 200
 
+@app.route('/nodes/resolve', methods=['GET'])
+def consensus():
+    response = "Test"
+    for node in blockchain.nodes:
+        pass
+    return jsonify(response), 200
+
+@app.route('/nodes/get', methods=['GET'])
+def get_nodes():
+    nodes = list(blockchain.nodes)
+    response = {'nodes': nodes}
+    return jsonify(response), 200
+
+@app.route('/chain/sync', methods=['POST'])
+def chain_sync():
+    values = request.get_json()
+    required = ['host']
+
+    if not all(k in values for k in required):
+        return 'Missing values.', 400
+    
+    host = values['host']
+    response = requests.get(f'http://{host}/chain')
+    if response.status_code == requests.codes.ok:
+        data = json.loads(response.text)
+        # replace the chain with longer one if it is vaild
+        if len(data['chain']) > len(blockchain.chain):
+            chain = data['chain'].copy()
+            chain.reverse()
+            is_valid = blockchain.valid_chain(chain)
+            if is_valid == True:
+                blockchain.replace_blockchain(data['chain'])
+
+    return 'ok', 200
 
 if __name__ == '__main__':
     port_no = sys.argv[1] if len(sys.argv) > 1 else 5000
+    node_name = sys.argv[2] if len(sys.argv) > 2 else None
+    if node_name is not None:
+        transaction_pool = Transaction_Pool(file_name=f'transactions_{node_name}.txt')
+        blockchainMemory = BlockchainMemory(file_name=f'blockchainMemory_{node_name}.txt')
+        utxo_pool = Utxo_Pool(file_name=f'utxos_{node_name}.txt')
+    else:
+        # initiate the Transaction Pool
+        transaction_pool = Transaction_Pool()
+        # initiate the BlockchainMemory
+        blockchainMemory = BlockchainMemory()
+        # initiate the BlockchainDB
+        #TODO
+        #blockchainDB = BlockchainDB()
+
+    # initiate the Blockchain
+    blockchain = Blockchain(owner,
+        transaction_pool=transaction_pool,
+        blockchainMemory=blockchainMemory,
+        blockchainDB=blockchainDB,
+        utxo_pool=utxo_pool)
+    blockchainHistory = []
+
+    # get block
+    if blockchainMemory is not None:
+        # get all blocks from memory
+        blockchainHistory = blockchainMemory.get_blockchain_from_memory()
+    elif blockchainDB is not None:
+        # get all blocks from DB
+        blockchainHistory = blockchainDB.get_all_blocks()
+
+
+    if len(blockchainHistory) > 0:
+        if blockchainMemory is not None:
+            # append block from memory
+            for block in blockchainHistory:
+                blockchain.apply_block_history(block)
+                utxo_pool.apply_block_history(block.transactions)
+        elif blockchainDB is not None:
+            for block in blockchainHistory:
+                blockchain.apply_block_history(block)
+                utxo_pool.apply_block_history(block["transactions"])
+    else:
+        # Create genesis block
+        blockchain.create_first_block()
+        # initiate the UTXO State
+        utxo_pool.clear_utxos_from_memory()
+
     app.run(port=port_no)

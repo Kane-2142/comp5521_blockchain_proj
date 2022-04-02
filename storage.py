@@ -7,8 +7,8 @@ TRANSACTIONPOOL_FILE = "transactions.txt"
 UTXOPOOL_FILE = "utxos.txt"
 
 class Transaction_Pool:
-    def __init__(self):
-        self.file_name = TRANSACTIONPOOL_FILE
+    def __init__(self, file_name=TRANSACTIONPOOL_FILE):
+        self.file_name = file_name
         # Create an empty file if not exists
         if not os.path.exists(self.file_name):
             file_obj = open(self.file_name, "wb")
@@ -35,8 +35,8 @@ class Transaction_Pool:
         open(self.file_name, 'w').close()
 
 class Utxo_Pool:
-    def __init__(self):
-        self.file_name = UTXOPOOL_FILE
+    def __init__(self, file_name=UTXOPOOL_FILE):
+        self.file_name = file_name
         self.pool_list = []
         self.get_utxos_from_memory()
 

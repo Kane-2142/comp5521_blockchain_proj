@@ -28,7 +28,7 @@ class Block:
     def toDict(self):
         return {
             'index': self.index,
-            'previousHash': self.previous_hash,
+            'previous_hash': self.previous_hash,
             'timestamp': self.timestamp,
             'transactions': self.transactions,
             'merkle_root': self.merkle_root,
@@ -38,8 +38,20 @@ class Block:
 
     @property
     def toJSON(self):
-        return json.dumps(self.toDict, sort_keys=True, indent=4)
+        return json.dumps(self.toDict, sort_keys=True)
 
+    @staticmethod
+    def fromDict(blockData):
+        return Block(
+            index = blockData["index"],
+            timestamp = blockData["timestamp"],
+            previous_hash = blockData["previous_hash"],
+            transactions = blockData["transactions"],
+            merkle_root = blockData["merkle_root"],
+            nonce = blockData["nonce"],
+            difficulty = blockData["difficulty"]
+
+        )
 
     def get_transaction(self, transaction_hash: dict) -> dict:
         current_block = self
