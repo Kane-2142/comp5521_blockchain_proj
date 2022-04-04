@@ -19,6 +19,7 @@ from storage import Transaction_Pool, Utxo_Pool
 from transaction_verifier import Transaction_Verifier, TransactionVer_Exception
 import sys
 import requests
+from node import Node
 
 transactions = []
 TPCoins = []
@@ -27,6 +28,8 @@ last_block_hash = ""
 DIFFICULTY_ADJUSTMENT_INTERVAL = 5
 BLOCK_GENERATION_INTERVAL = 20
 COINBASE_REWARD     = 1
+
+node_name = ""
 
 def get_timestamp():
   return round(time.time())
@@ -46,7 +49,7 @@ class Blockchain:
         self.blockchainMemory = blockchainMemory
         self.blockchainDB = blockchainDB
         self.owner = owner
-        self.nodes = set()
+        self.nodes = []
         #self.create_block(proof=1, previous_hash='0')
 
     # Create genesis block
@@ -195,7 +198,7 @@ class Blockchain:
     def register_node(self, address):
         # add a new node to the list of nodes
         parsed_url = urlparse(address)
-        self.nodes.add(parsed_url.netloc)
+        self.nodes.append(Node(parsed_url.netloc))
 
     def full_chain(self):
         # xxx returns the full chain and a number of blocks
@@ -388,6 +391,7 @@ def get_transaction(tx_id):
 
 @app.route('/transaction/new', methods=['POST'])
 def new_transaction():
+    print("get new transaction")
     values = request.get_json()
     required = ['inputs', 'outputs']
 
@@ -404,13 +408,13 @@ def new_transaction():
     transaction = Transaction(tx_inputs, tx_outputs)
     transaction.sign(owner)
     try:
-        transaction_ver = Transaction_Verifier(blockchain, transaction_pool)
+        transaction_ver = Transaction_Verifier(blockchain, node_name, transaction_pool)
         transaction_ver.receive(transaction.transaction_data)
         if transaction_ver.is_new:
             transaction_ver.validate()
             transaction_ver.validate_funds()
             transaction_ver.store()
-            # transaction.broadcast()
+            transaction_ver.broadcast()
     except TransactionVer_Exception as transaction_exception:
         return f'{transaction_exception}', 400
 
@@ -449,7 +453,7 @@ def register_nodes():
 
     response = {
         'message': "New nodes have been added",
-        'all_nodes': list(blockchain.nodes),
+        'all_nodes': list(node.dict for node in blockchain.nodes),
     }
 
     return jsonify(response), 201

@@ -2,6 +2,7 @@ import copy
 import logging
 
 import requests
+from node import Node
 
 # from block import Block
 # from main import Blockchain
@@ -17,7 +18,7 @@ class TransactionVer_Exception(Exception):
 
 
 class Transaction_Verifier:
-    def __init__(self, blockchain, transaction_pool: Transaction_Pool):
+    def __init__(self, blockchain, hostname, transaction_pool: Transaction_Pool):
         self.blockchain = blockchain
         self.transaction_data = {}
         self.inputs = []
@@ -27,7 +28,7 @@ class Transaction_Verifier:
         self.transaction_pool = transaction_pool
         # self.known_node_memory = KnownNodesMemory()
         self.sender = ""
-        # self.hostname = hostname
+        self.hostname = hostname
 
     def receive(self, transaction: dict):
         self.transaction_data = transaction
@@ -115,10 +116,12 @@ class Transaction_Verifier:
 
     def broadcast(self):
         logging.info("Broadcasting to all nodes")
-        node_list = self.known_node_memory.known_nodes
+        # node_list = self.known_node_memory.known_nodes
+        node_list = self.blockchain.nodes
         for node in node_list:
             if node.hostname != self.hostname and node.hostname != self.sender:
                 try:
+                    print (f"Broadcasting to {node.hostname}")
                     logging.info(f"Broadcasting to {node.hostname}")
                     node.send_transaction({"transaction": self.transaction_data})
                 except requests.ConnectionError:
