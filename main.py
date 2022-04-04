@@ -54,6 +54,7 @@ def home():
     return Instruction, 200
 
 
+# endpoint to get the owner's private & public key
 @app.route('/owner', methods=['GET'])
 def show_owner():
     response = {
@@ -65,6 +66,7 @@ def show_owner():
     return jsonify(response), 200
 
 
+# endpoint to set specified private key for the owner
 @app.route('/owner/change', methods=['POST'])
 def change_owner():
     global owner
@@ -77,6 +79,7 @@ def change_owner():
     return jsonify(response), 200
 
 
+# endpoint to set a new block broadcast from other node
 @app.route("/block/new_broadcast", methods=['POST'])
 def validate_block():
     print("received new block broadcast")
@@ -96,8 +99,7 @@ def validate_block():
     return "Transaction success", 200
 
 
-
-
+# endpoint to mine a new block
 @app.route('/mine', methods=['GET'])
 def mine():
     mine_start = datetime.datetime.now()
@@ -138,21 +140,25 @@ def mine():
     return jsonify(response, 200)
 
 
+# endpoint to get the utxos list of a user by public_key_hash
 @app.route('/utxos/<user_public_key>', methods=['GET'])
 def get_utxos(user_public_key):
     return jsonify(blockchain.get_user_utxos(user_public_key)), 200
 
 
+# endpoint to get the utxos list of the owner
 @app.route('/utxos', methods=['GET'])
 def get_owner_utxos():
     return jsonify(blockchain.get_user_utxos(owner.public_key_hash)), 200
 
 
+# endpoint to get the utxos list in the blockchain
 @app.route('/utxos_list', methods=['GET'])
 def get_utxos_list():
     return jsonify(utxo_pool.get_utxos_from_memory()), 200
 
 
+# endpoint to get a specific transaction by the transaction_hash
 @app.route('/transaction/<tx_id>', methods=['GET'])
 def get_transaction(tx_id):
     return jsonify(blockchain.get_transaction(tx_id), 200)
@@ -200,7 +206,7 @@ def new_transaction():
     return jsonify(response, 200)
 
 
-# endpoint for receive broadcasted new transaction
+# endpoint for handling the broadcasted new transaction
 @app.route('/transaction/new_broadcast', methods=['POST'])
 def new_transaction_broadcast():
     print("get new broadcasted transaction")
@@ -228,6 +234,7 @@ def new_transaction_broadcast():
     return jsonify(response, 200)
 
 
+# endpoint to get the blockchain
 @app.route('/chain', methods=['GET'])
 def full_chain():
     print(blockchain.chain)
@@ -238,6 +245,7 @@ def full_chain():
     return jsonify(response), 200
 
 
+# endpoint for handling the nodes list
 @app.route('/nodes/register', methods=['POST'])
 def register_nodes():
     values = request.get_json()
@@ -259,6 +267,7 @@ def register_nodes():
     return jsonify(response), 201
 
 
+# endpoint to clear all the storages
 @app.route('/delete/chain', methods=['GET'])
 def delete_chain():
     if blockchainMemory is not None:
