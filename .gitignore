@@ -16,3 +16,6 @@ utxos_node_1.txt
 transactions_node_1.txt
 transactions_node_2.txt
 utxos_node_1.txt
+utxos_node_2.txt
+blockchainMemory_node_1.txt
+blockchainMemory_node_2.txt

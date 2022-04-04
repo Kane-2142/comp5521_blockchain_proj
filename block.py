@@ -1,5 +1,16 @@
 import json
 import hashlib
+import time
+from urllib.parse import urlparse
+from merkle_tree import get_merkle_root
+from node import Node
+import requests
+
+DIFFICULTY_ADJUSTMENT_INTERVAL = 1
+BLOCK_GENERATION_INTERVAL = 20
+
+def get_timestamp():
+  return round(time.time())
 
 class Block:
     def __init__(self,
@@ -59,3 +70,258 @@ class Block:
             if transaction["transaction_hash"] == transaction_hash:
                 return transaction
         return {}
+
+
+class BlockException(Exception):
+    def __init__(self, expression, message):
+        self.expression = expression
+        self.message = message
+
+
+class Blockchain ():
+    def __init__(self, owner, transaction_pool=None, blockchainMemory=None, blockchainDB=None, utxo_pool=None):
+        self.chain = []
+        self.transaction_pool = transaction_pool
+        self.utxo_pool = utxo_pool
+        self.blockchainMemory = blockchainMemory
+        self.blockchainDB = blockchainDB
+        self.owner = owner
+        self.nodes = []
+        # self.create_block(proof=1, previous_hash='0')
+
+    # Create genesis block
+    def create_first_block(self):
+        first_block = Block(
+            index=0,
+            previous_hash='0',
+            timestamp=get_timestamp(),
+            nonce=0,
+            transactions=[]
+        )
+        self.chain.append(first_block)
+        # blockchainDB.add_blocks(first_block)
+
+    def create_block(self, previousBlock):
+        transactions = self.transaction_pool.get_transactions_from_memory()
+        if transactions:
+            new_block = Block(
+                index=previousBlock.index + 1,
+                timestamp=get_timestamp(),
+                previous_hash=previousBlock.hash,
+                transactions=transactions,
+                nonce=0,
+            )
+            new_block = self.proof_of_work(self.chain, transactions, get_merkle_root(transactions))
+            # empty the transaction pool
+            self.transaction_pool.clear_transactions_from_memory()
+            # transaction confirmed, add the utxos to the utxo pool.
+            for transaction in transactions:
+                for index, output in enumerate(transaction["outputs"]):
+                    self.utxo_pool.add_utxo(transaction["transaction_hash"], index)
+            return new_block
+        else:
+            raise BlockException("", "No transaction in transaction_pool")
+
+    def get_last_block(self):
+        return self.chain[-1]
+
+    @property
+    def last_block(self):
+        # returns last block in the chain
+        return self.chain[-1]
+
+    def get_transaction_from_chain(self, transaction_hash) -> dict:
+        result = {}
+        for block in reversed(self.chain):
+            if block.get_transaction(transaction_hash):
+                result["confirmation"] = self.last_block.index - block.index + 1
+                result["transaction_data"] = block.get_transaction(transaction_hash)
+                return result
+        return result
+
+    def get_transaction_from_pool(self, transaction_hash) -> dict:
+        result = {}
+        transactions = self.transaction_pool.get_transactions_from_memory()
+        if transactions:
+            for tx in transactions:
+                if tx["transaction_hash"] == transaction_hash:
+                    result["confirmation"] = "pending"
+                    result["transaction_data"] = tx
+                    return result
+        return result
+
+    def get_transaction(self, transaction_hash):
+        result = {}
+        result = self.get_transaction_from_chain(transaction_hash)
+        if not result:
+            result = self.get_transaction_from_pool(transaction_hash)
+        return result
+
+    def get_user_utxos(self, user: str) -> dict:
+        unspent_outputs = []
+        unspent_amount = 0
+        utxos = self.utxo_pool.get_utxos_from_memory()
+        for utxo in utxos:
+            transaction = self.get_transaction_from_chain(utxo["transaction_hash"])["transaction_data"]
+            output = transaction["outputs"][utxo["output_index"]]
+            locking_script = output["locking_script"]
+            for element in locking_script.split(" "):
+                if not element.startswith("OP") and element == user:
+                    unspent_outputs.append({"amount": output["amount"],
+                                            "transaction_hash": transaction["transaction_hash"]
+                                            })
+        return {"user": user,
+                "total": unspent_amount,
+                "utxos": unspent_outputs}
+
+    def get_transaction_from_utxo(self, utxo_hash: str, utxo_index: int) -> dict:
+        if self.utxo_pool.is_utxo_exist(utxo_hash, utxo_index):
+            for block in reversed(self.chain):
+                for transaction in block.transactions:
+                    if utxo_hash == transaction["transaction_hash"]:
+                        return transaction
+        return {}
+
+    def get_locking_script_from_utxo(self, utxo_hash: str, utxo_index: int):
+        transaction_data = self.get_transaction_from_utxo(utxo_hash, utxo_index)
+        return transaction_data["outputs"][utxo_index]["locking_script"]
+
+    @staticmethod
+    def proof_of_work(blockchain, transactions, merkle_root):
+        nonce = 0
+        latestBlock = blockchain[-1]
+        difficulty = Blockchain.get_difficulty(blockchain)
+        while (True):
+            block = Block(
+                index=latestBlock.index + 1,
+                previous_hash=latestBlock.hash,
+                timestamp=get_timestamp(),
+                transactions=transactions,
+                merkle_root=merkle_root,
+                nonce=nonce,
+                difficulty=difficulty
+            )
+            if Blockchain.validate_proof(block.hash, difficulty) == True:
+                return block
+            nonce += 1
+
+    @staticmethod
+    def get_difficulty(blockchain):
+        latestBlock = blockchain[-1]
+        if latestBlock.index % DIFFICULTY_ADJUSTMENT_INTERVAL == 0 and latestBlock != 0:
+            return Blockchain.get_adjusted_difficulty(latestBlock, blockchain)
+        else:
+            return latestBlock.difficulty
+
+
+    @staticmethod
+    def get_adjusted_difficulty(latestBlock, aBlockchain):
+        prevAdjustmentBlock = aBlockchain[-1]
+        timeExpected = BLOCK_GENERATION_INTERVAL - DIFFICULTY_ADJUSTMENT_INTERVAL
+        timeTaken = latestBlock.timestamp - prevAdjustmentBlock.timestamp
+        if timeTaken < timeExpected / 2:
+            return prevAdjustmentBlock.difficulty + 1
+        elif timeTaken > timeExpected * 2:
+            return prevAdjustmentBlock.difficulty - 1
+        else:
+            return prevAdjustmentBlock.difficulty
+
+    @staticmethod
+    def validate_proof(hash, difficulty):
+        binary_hash = format(int(hash, 16), '08b').zfill(32 * 8)
+        return binary_hash.startswith('0' * difficulty)
+
+    def register_node(self, address):
+        # add a new node to the list of nodes
+        parsed_url = urlparse(address)
+        if Node(parsed_url.netloc) not in self.nodes:
+            self.nodes.append(Node(parsed_url.netloc))
+
+    def full_chain(self):
+        # xxx returns the full chain and a number of blocks
+        pass
+
+    # def hash(self, block):
+    #    # hashes a block
+    #    # also make sure that the transactions are ordered otherwise we will have insonsistent hashes!
+    #    block_string = json.dumps(block, sort_keys=True).encode()
+    #    return hashlib.sha256(block_string).hexdigest()
+
+    def valid_chain(self, chain):
+        # determine if a given blockchain is valid
+        last_block = Block.fromDict(chain[0])
+        current_index = 1
+
+        while current_index < len(chain):
+            block = Block.fromDict(chain[current_index])
+            # check that the hash of the block is correct
+            if last_block.previous_hash != block.hash:
+                return False
+            # check that the proof of work is correct
+            if not self.validate_proof(last_block.hash, last_block.difficulty):
+                return False
+
+            last_block = block
+            current_index += 1
+
+        return True
+
+    def resolve_conflicts(self):
+        # this is our Consensus Algorithm, it resolves conflicts by replacing
+        # our chain with the longest one in the network.
+
+        neighbours = self.nodes
+        new_chain = None
+
+        # we are only looking for the chains longer than ours
+        max_length = len(self.chain)
+
+        # grab and verify chains from all the nodes in our network
+        for node in neighbours:
+
+            # using http get to obtain the chain
+            response = requests.get(f'http://chain/{node}')  # need to build an endpoint
+
+            if response.status_code == 200:
+
+                length = response.json()['length']
+                chain = response.json()['chain']
+
+                # check if the chain is longer and whether the chain is valid
+                if length > max_length and self.valid_chain(chain):
+                    max_length = length
+                    new_chain = chain
+
+        # replace our chain if we discover a new longer valid chain
+        if new_chain:
+            self.chain = new_chain
+            return True
+
+        return False
+
+    def apply_block_history(self, blockData):
+        new_block = Block(
+            index=blockData["index"],
+            timestamp=blockData["timestamp"],
+            previous_hash=blockData["previous_hash"],
+            transactions=blockData["transactions"],
+            merkle_root=blockData["merkle_root"],
+            nonce=blockData["nonce"],
+            difficulty=blockData["difficulty"]
+
+        )
+        self.chain.append(new_block)
+
+    def save_blockchain(self):
+        if self.blockchainMemory is not None:
+            self.blockchainMemory.store_blockchain_in_memory([item.toDict for item in self.chain])
+        elif self.blockchainDB is not None:
+            self.blockchainDB.delect_all_blocks()
+            for block in self.chain:
+                self.blockchainDB.add_blocks(block)
+
+    def replace_blockchain(self, chain):
+        self.chain = []
+        for item in chain:
+            self.apply_block_history(item)
+        self.save_blockchain()
