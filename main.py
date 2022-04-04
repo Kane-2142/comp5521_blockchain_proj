@@ -86,17 +86,17 @@ def validate_block():
     content = request.json
 
     #TODO pseudo code:
-    # if newBlock.index-1 == chain.lastindex and newBlock.previous_hash = chain.lastblock.hash then
+    # if newBlock.index-1 == chain.lastindex and newBlock.previous_hash = chain.lastblock.hash:
     #    # no branching, can append to our chain
-    #    if valdiate() pow and newBlock.transactions.validate:
-    #       chain.append
-    #    else
-    #        drop
-    # else
-    #    if newBlock.index-1 > chain.lastindex then
+    #    if pow_valdiate(newBlock)  and newBlock.transactions.validate:
+    #       chain.append(newBlock)
+    #    else:
+    #       drop
+    # else:
+    #    if newBlock.index-1 > chain.lastindex:
     #        # there longer chain exist from other nodes-> ask all nodes to get the longest chain, and replace that to our chain
     #        resolve_conflict()
-    #    else
+    #    else:
     #        # shorter branch block, just drop
     #        drop
     # if not drop:
