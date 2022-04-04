@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "a1964ae8-d044-4517-a460-21eb95c36a1f",
+		"_postman_id": "ca69b43d-4f85-414e-b0ba-0f564f2f25a9",
 		"name": "comp5521_blockchain_proj",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -141,7 +141,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\r\n    \"inputs\": [\r\n        {\r\n            \"transaction_hash\": \"\",\r\n            \"output_index\": 0\r\n        }\r\n    ],\r\n    \"outputs\": [\r\n        {\r\n            \"receiver\": \"\",\r\n            \"amount\": 1\r\n        }\r\n    ]\r\n}",
+									"raw": "{\r\n    \"transaction\": {\r\n        \"inputs\": [\r\n            {\r\n                \"transaction_hash\": \"51da5dd65d5cb72f92bec081828857db5bd4bfc2fdba6d1a4290eef381236bb3\",\r\n                \"output_index\": 0\r\n            }\r\n        ],\r\n        \"outputs\": [\r\n            {\r\n                \"locking_script\": \"test_receiver\",\r\n                \"amount\": 1\r\n            }\r\n        ]\r\n    }\r\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -183,6 +183,28 @@
 									"port": "3000",
 									"path": [
 										"chain"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "get utxo (Node1)",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://127.0.0.1:3000/utxos",
+									"protocol": "http",
+									"host": [
+										"127",
+										"0",
+										"0",
+										"1"
+									],
+									"port": "3000",
+									"path": [
+										"utxos"
 									]
 								}
 							},
@@ -242,6 +264,82 @@
 									"port": "3001",
 									"path": [
 										"chain"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "create transaction",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"transaction\": {\r\n        \"inputs\": [\r\n            {\r\n                \"transaction_hash\": \"693ddc9877e0d73211219667b3fd98c6924adaa3022e45cc8853aeb73f1885bf\",\r\n                \"output_index\": 0\r\n            }\r\n        ],\r\n        \"outputs\": [\r\n            {\r\n                \"locking_script\": \"test_receiver\",\r\n                \"amount\": 1\r\n            }\r\n        ]\r\n    }\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://127.0.0.1:3001/transaction/new",
+									"protocol": "http",
+									"host": [
+										"127",
+										"0",
+										"0",
+										"1"
+									],
+									"port": "3001",
+									"path": [
+										"transaction",
+										"new"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "mine (Node2)",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://127.0.0.1:3000/mine",
+									"protocol": "http",
+									"host": [
+										"127",
+										"0",
+										"0",
+										"1"
+									],
+									"port": "3000",
+									"path": [
+										"mine"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "get utxo (Node2)",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://127.0.0.1:3001/utxos",
+									"protocol": "http",
+									"host": [
+										"127",
+										"0",
+										"0",
+										"1"
+									],
+									"port": "3001",
+									"path": [
+										"utxos"
 									]
 								}
 							},
