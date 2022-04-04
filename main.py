@@ -79,13 +79,30 @@ def change_owner():
     return jsonify(response), 200
 
 
-# endpoint to set a new block broadcast from other node
+# endpoint to handle a new block broadcast from other node
 @app.route("/block/new_broadcast", methods=['POST'])
 def validate_block():
     print("received new block broadcast")
     content = request.json
 
-    #TODO
+    #TODO pseudo code:
+    # if newBlock.index-1 == chain.lastindex and newBlock.previous_hash = chain.lastblock.hash then
+    #    # no branching, can append to our chain
+    #    if valdiate() pow and newBlock.transactions.validate:
+    #       chain.append
+    #    else
+    #        drop
+    # else
+    #    if newBlock.index-1 > chain.lastindex then
+    #        # there longer chain exist from other nodes-> ask all nodes to get the longest chain, and replace that to our chain
+    #        resolve_conflict()
+    #    else
+    #        # shorter branch block, just drop
+    #        drop
+    # if not drop:
+    #    chain.broadcast()
+
+
     # blockchain_base = blockchain_memory.get_blockchain_from_memory()
     # try:
     #     block = NewBlock(blockchain_base, MY_HOSTNAME)
