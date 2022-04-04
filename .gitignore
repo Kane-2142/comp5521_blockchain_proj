@@ -1,3 +1,18 @@
 
 __pycache__/
 blockchainMemory.txt
+.idea/comp5521_blockchain_proj.iml
+*.xml
+transactions.txt
+utxos.txt
+_blockchainMemory.txt
+blockchainMemory_node_3.txt
+transactions_node_1.txt
+transactions_node_2.txt
+transactions_node_3.txt
+utxos_node_3.txt
+transactions_node_1.txt
+utxos_node_1.txt
+transactions_node_1.txt
+transactions_node_2.txt
+utxos_node_1.txt
