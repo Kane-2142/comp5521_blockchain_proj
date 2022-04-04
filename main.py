@@ -380,7 +380,7 @@ def get_owner_utxos():
 
 @app.route('/utxos_list', methods=['GET'])
 def get_utxos_list():
-    return jsonify(utxos_pool.get_utxos_from_memory()), 200
+    return jsonify(utxo_pool.get_utxos_from_memory()), 200
 
 @app.route('/transaction/<tx_id>', methods=['GET'])
 def get_transaction(tx_id):
@@ -404,7 +404,7 @@ def new_transaction():
     transaction = Transaction(tx_inputs, tx_outputs)
     transaction.sign(owner)
     try:
-        transaction_ver = Transaction_Verifier(blockchain)
+        transaction_ver = Transaction_Verifier(blockchain, transaction_pool)
         transaction_ver.receive(transaction.transaction_data)
         if transaction_ver.is_new:
             transaction_ver.validate()
@@ -416,7 +416,7 @@ def new_transaction():
 
     # remove the utxo from the utxo pool (even though transaction not yet confirmed), to avoid double spending
     for tx_input in tx_inputs:
-        utxos_pool.remove_utxo(tx_input)
+        utxo_pool.remove_utxo(tx_input)
     response = {
         'message': f'Transaction will be added to the Block {blockchain.last_block.index + 1}',
         'transaction_hash': transaction.transaction_hash
@@ -461,7 +461,7 @@ def delete_chain():
         blockchainMemory.clear_blockchain_from_memory()
     if blockchainDB is not None:
         blockchainDB.delect_all_blocks()
-    utxos_pool.clear_utxos_from_memory()
+    utxo_pool.clear_utxos_from_memory()
     transaction_pool.clear_transactions_from_memory()
 
     return jsonify("blockchain deleted"), 200

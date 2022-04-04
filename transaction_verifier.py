@@ -17,14 +17,14 @@ class TransactionVer_Exception(Exception):
 
 
 class Transaction_Verifier:
-    def __init__(self, blockchain):
+    def __init__(self, blockchain, transaction_pool: Transaction_Pool):
         self.blockchain = blockchain
         self.transaction_data = {}
         self.inputs = []
         self.outputs = []
         self.is_valid = False
         self.is_funds_sufficient = False
-        self.transaction_pool = Transaction_Pool()
+        self.transaction_pool = transaction_pool
         # self.known_node_memory = KnownNodesMemory()
         self.sender = ""
         # self.hostname = hostname
@@ -113,15 +113,15 @@ class Transaction_Verifier:
             current_transactions.append(self.transaction_data)
             self.transaction_pool.store_transactions_in_memory(current_transactions)
 
-    # def broadcast(self):
-    #     logging.info("Broadcasting to all nodes")
-    #     node_list = self.known_node_memory.known_nodes
-    #     for node in node_list:
-    #         if node.hostname != self.hostname and node.hostname != self.sender:
-    #             try:
-    #                 logging.info(f"Broadcasting to {node.hostname}")
-    #                 node.send_transaction({"transaction": self.transaction_data})
-    #             except requests.ConnectionError:
-    #                 logging.info(f"Failed broadcasting to {node.hostname}")
-    #
+    def broadcast(self):
+        logging.info("Broadcasting to all nodes")
+        node_list = self.known_node_memory.known_nodes
+        for node in node_list:
+            if node.hostname != self.hostname and node.hostname != self.sender:
+                try:
+                    logging.info(f"Broadcasting to {node.hostname}")
+                    node.send_transaction({"transaction": self.transaction_data})
+                except requests.ConnectionError:
+                    logging.info(f"Failed broadcasting to {node.hostname}")
+
 
