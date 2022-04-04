@@ -106,8 +106,9 @@ class Transaction_Verifier:
             raise TransactionVer_Exception(f"inputs ({inputs_total}), outputs ({outputs_total})",
                                             "Transaction inputs and outputs did not match")
 
-    def store(self):
-        if self.is_valid and self.is_funds_sufficient:
+    def store(self, skip_validate=False):
+
+        if skip_validate or (self.is_valid and self.is_funds_sufficient):
             logging.info("Storing transaction data in memory")
             logging.info(f"Transaction data: {self.transaction_data}")
             current_transactions = self.transaction_pool.get_transactions_from_memory()

@@ -389,30 +389,38 @@ def get_utxos_list():
 def get_transaction(tx_id):
     return jsonify(blockchain.get_transaction(tx_id), 200)
 
+
+#endpoint for owner to create new transaction
 @app.route('/transaction/new', methods=['POST'])
 def new_transaction():
     print("get new transaction")
-    values = request.get_json()
-    required = ['inputs', 'outputs']
-
-    if not all(k in values for k in required):
-        return 'Missing values.', 400
-    inputs = values['inputs']
-    outputs = values['outputs']
+    content = request.json
+    # required = ['inputs', 'outputs']
+    #
+    # if not all(k in values for k in required):
+    #     return 'Missing values.', 400
+    inputs = content['transaction']['inputs']
+    outputs = content['transaction']['outputs']
     tx_inputs = []
     tx_outputs= []
     for i in inputs:
         tx_inputs.append(TransactionInput(i['transaction_hash'],i['output_index']))
     for o in outputs:
-        tx_outputs.append(TransactionOutput(o['receiver'], o['amount']))
+        tx_outputs.append(TransactionOutput(o['locking_script'], o['amount']))
     transaction = Transaction(tx_inputs, tx_outputs)
-    transaction.sign(owner)
+    # when input signature is none, this is not a broadcast. And, it is from owner, sign the transaction input with owner's private key
+    if content["transaction"]["inputs"][0]['transaction_hash'] \
+            and not 'unlocking_script' in content["transaction"]["inputs"][0]:
+        transaction.sign(owner)
     try:
         transaction_ver = Transaction_Verifier(blockchain, node_name, transaction_pool)
         transaction_ver.receive(transaction.transaction_data)
         if transaction_ver.is_new:
-            transaction_ver.validate()
-            transaction_ver.validate_funds()
+            #when broadcast transaction received, not validate it yet (because block broadcast is not yet done)
+            if content["transaction"]["inputs"][0]['transaction_hash'] \
+                    and not 'unlocking_script' in content["transaction"]["inputs"][0]:
+                transaction_ver.validate()
+                transaction_ver.validate_funds()
             transaction_ver.store()
             transaction_ver.broadcast()
     except TransactionVer_Exception as transaction_exception:
@@ -425,6 +433,34 @@ def new_transaction():
         'message': f'Transaction will be added to the Block {blockchain.last_block.index + 1}',
         'transaction_hash': transaction.transaction_hash
     }
+    return jsonify(response, 200)
+
+
+#endpoint for receive broadcasted new transaction
+@app.route('/transaction/new_broadcast', methods=['POST'])
+def new_transaction_broadcast():
+    print("get new broadcasted transaction")
+    content = request.json
+    try:
+        transaction_ver = Transaction_Verifier(blockchain, node_name, transaction_pool)
+        transaction_ver.receive(content["transaction"])
+        if transaction_ver.is_new:
+            #when broadcast transaction received, not validate it yet (because block broadcast is not yet done)
+            #     transaction_ver.validate()
+            #     transaction_ver.validate_funds()
+            transaction_ver.store(skip_validate=True)
+            transaction_ver.broadcast()
+    except TransactionVer_Exception as transaction_exception:
+        return f'{transaction_exception}', 400
+
+    # remove the utxo from the utxo pool (even though transaction not yet confirmed), to avoid double spending
+    # for tx_input in TransactionInput(content["transaction"]["inputs"]):
+    #     utxo_pool.remove_utxo(tx_input)
+    # response = {
+    #     'message': f'Transaction will be added to the Block {blockchain.last_block.index + 1}',
+    #     'transaction_hash': content["transaction"]["transaction_hash"]
+    # }
+    response = {'message': "broadcast transaction received"}
     return jsonify(response, 200)
 
 

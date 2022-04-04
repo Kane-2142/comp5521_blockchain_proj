@@ -44,7 +44,7 @@ class Node:
         return self.post(endpoint="block", data=block)
 
     def send_transaction(self, transaction_data: dict) -> requests.Response:
-        return self.post("/transaction/new", transaction_data)
+        return self.post("transaction/new_broadcast", transaction_data)
 
     def get_blockchain(self) -> list:
         return self.get(endpoint="block")
