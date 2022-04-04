@@ -23,7 +23,7 @@ transactions = []
 TPCoins = []
 last_block_hash = ""
 
-COINBASE_REWARD     = 1
+COINBASE_REWARD = 1
 
 hostname = ""
 
@@ -37,6 +37,7 @@ blockchainMemory = None
 blockchainDB = None
 # generate a globally unique address for this node
 node_identifier = str(uuid4()).replace('-', '')
+
 
 @app.route('/', methods=['GET'])
 def home():
@@ -60,7 +61,7 @@ def show_owner():
         'public_key_hash': owner.public_key_hash,
         'public_key_hex': owner.public_key_hex,
     }
-    print (response)
+    print(response)
     return jsonify(response), 200
 
 
@@ -81,14 +82,13 @@ def mine():
     mine_start = datetime.datetime.now()
     # first we need to run the proof of work algorithm to calculate the new proof..
     last_block = blockchain.last_block
-    #last_proof = last_block['proof']
-    #proof = blockchain.proof_of_work(last_proof)
-
+    # last_proof = last_block['proof']
+    # proof = blockchain.proof_of_work(last_proof)
 
     # we must receive reward for finding the proof in form of receiving 1 Coin
     # The output_index of the TxIn is the block height. This is to ensure that each coinbase transaction
     # has a unique txId
-    coinbase_transaction = Transaction([TransactionInput("",last_block.index+1)],
+    coinbase_transaction = Transaction([TransactionInput("", last_block.index + 1)],
                                        [TransactionOutput(owner.public_key_hash, COINBASE_REWARD)])
     transactions = transaction_pool.get_transactions_from_memory()
     transactions.insert(0, coinbase_transaction.transaction_data)
@@ -108,43 +108,43 @@ def mine():
         'block_header': new_block.toDict
     }
 
-    #TODO
-    #blockchainDB.add_blocks(block)
-    
+    # TODO
+    # blockchainDB.add_blocks(block)
+
     return jsonify(response, 200)
+
 
 @app.route('/utxos/<user_public_key>', methods=['GET'])
 def get_utxos(user_public_key):
     return jsonify(blockchain.get_user_utxos(user_public_key)), 200
 
+
 @app.route('/utxos', methods=['GET'])
 def get_owner_utxos():
     return jsonify(blockchain.get_user_utxos(owner.public_key_hash)), 200
 
+
 @app.route('/utxos_list', methods=['GET'])
 def get_utxos_list():
     return jsonify(utxo_pool.get_utxos_from_memory()), 200
+
 
 @app.route('/transaction/<tx_id>', methods=['GET'])
 def get_transaction(tx_id):
     return jsonify(blockchain.get_transaction(tx_id), 200)
 
 
-#endpoint for owner to create new transaction
+# endpoint for owner to create new transaction
 @app.route('/transaction/new', methods=['POST'])
 def new_transaction():
     print("get new transaction")
     content = request.json
-    # required = ['inputs', 'outputs']
-    #
-    # if not all(k in values for k in required):
-    #     return 'Missing values.', 400
     inputs = content['transaction']['inputs']
     outputs = content['transaction']['outputs']
     tx_inputs = []
-    tx_outputs= []
+    tx_outputs = []
     for i in inputs:
-        tx_inputs.append(TransactionInput(i['transaction_hash'],i['output_index']))
+        tx_inputs.append(TransactionInput(i['transaction_hash'], i['output_index']))
     for o in outputs:
         tx_outputs.append(TransactionOutput(o['locking_script'], o['amount']))
     transaction = Transaction(tx_inputs, tx_outputs)
@@ -156,7 +156,7 @@ def new_transaction():
         transaction_ver = Transaction_Verifier(blockchain, hostname, transaction_pool)
         transaction_ver.receive(transaction.transaction_data)
         if transaction_ver.is_new:
-            #when broadcast transaction received, not validate it yet (because block broadcast is not yet done)
+            # when broadcast transaction received, not validate it yet (because block broadcast is not yet done)
             if content["transaction"]["inputs"][0]['transaction_hash'] \
                     and not 'unlocking_script' in content["transaction"]["inputs"][0]:
                 transaction_ver.validate()
@@ -176,7 +176,7 @@ def new_transaction():
     return jsonify(response, 200)
 
 
-#endpoint for receive broadcasted new transaction
+# endpoint for receive broadcasted new transaction
 @app.route('/transaction/new_broadcast', methods=['POST'])
 def new_transaction_broadcast():
     print("get new broadcasted transaction")
@@ -185,14 +185,14 @@ def new_transaction_broadcast():
         transaction_ver = Transaction_Verifier(blockchain, hostname, transaction_pool)
         transaction_ver.receive(content["transaction"])
         if transaction_ver.is_new:
-            #when broadcast transaction received, not validate it yet (because block broadcast is not yet done)
+            # when broadcast transaction received, not validate it yet (because block broadcast is not yet done)
             #     transaction_ver.validate()
             #     transaction_ver.validate_funds()
             transaction_ver.store(skip_validate=True)
             transaction_ver.broadcast()
     except TransactionVer_Exception as transaction_exception:
         return f'{transaction_exception}', 400
-
+    #TODO after block broadcast
     # remove the utxo from the utxo pool (even though transaction not yet confirmed), to avoid double spending
     # for tx_input in TransactionInput(content["transaction"]["inputs"]):
     #     utxo_pool.remove_utxo(tx_input)
@@ -246,6 +246,7 @@ def delete_chain():
 
     return jsonify("blockchain deleted"), 200
 
+
 @app.route('/nodes/resolve', methods=['GET'])
 def consensus():
     response = "Test"
@@ -253,11 +254,13 @@ def consensus():
         pass
     return jsonify(response), 200
 
+
 @app.route('/nodes/get', methods=['GET'])
 def get_nodes():
     nodes = list(blockchain.nodes)
     response = {'nodes': nodes}
     return jsonify(response), 200
+
 
 @app.route('/chain/sync', methods=['POST'])
 def chain_sync():
@@ -266,7 +269,7 @@ def chain_sync():
 
     if not all(k in values for k in required):
         return 'Missing values.', 400
-    
+
     host = values['host']
     response = requests.get(f'http://{host}/chain')
     if response.status_code == requests.codes.ok:
@@ -280,6 +283,7 @@ def chain_sync():
                 blockchain.replace_blockchain(data['chain'])
 
     return 'ok', 200
+
 
 if __name__ == '__main__':
     port_no = sys.argv[1] if len(sys.argv) > 1 else 5000
@@ -302,10 +306,10 @@ if __name__ == '__main__':
 
     # initiate the Blockchain
     blockchain = Blockchain(owner,
-        transaction_pool=transaction_pool,
-        blockchainMemory=blockchainMemory,
-        blockchainDB=blockchainDB,
-        utxo_pool=utxo_pool)
+                            transaction_pool=transaction_pool,
+                            blockchainMemory=blockchainMemory,
+                            blockchainDB=blockchainDB,
+                            utxo_pool=utxo_pool)
     blockchainHistory = []
 
     # get block
@@ -315,7 +319,6 @@ if __name__ == '__main__':
     elif blockchainDB is not None:
         # get all blocks from DB
         blockchainHistory = blockchainDB.get_all_blocks()
-
 
     if len(blockchainHistory) > 0:
         if blockchainMemory is not None:
