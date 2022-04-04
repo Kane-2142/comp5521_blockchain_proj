@@ -77,6 +77,27 @@ def change_owner():
     return jsonify(response), 200
 
 
+@app.route("/block/new_broadcast", methods=['POST'])
+def validate_block():
+    print("received new block broadcast")
+    content = request.json
+
+    #TODO
+    # blockchain_base = blockchain_memory.get_blockchain_from_memory()
+    # try:
+    #     block = NewBlock(blockchain_base, MY_HOSTNAME)
+    #     block.receive(new_block=content["block"], sender=content["sender"])
+    #     block.validate()
+    #     block.add()
+    #     block.clear_block_transactions_from_mempool()
+    #     block.broadcast()
+    # except (NewBlockException, TransactionException) as new_block_exception:
+    #     return f'{new_block_exception}', 400
+    return "Transaction success", 200
+
+
+
+
 @app.route('/mine', methods=['GET'])
 def mine():
     mine_start = datetime.datetime.now()
@@ -94,13 +115,16 @@ def mine():
     transactions.insert(0, coinbase_transaction.transaction_data)
     transaction_pool.store_transactions_in_memory(transactions)
 
-    # forge the new block by adding it to the chain
+    # create a new block
     new_block = blockchain.create_block(last_block)
 
     mine_duration = datetime.datetime.now() - mine_start
     mine_duration_in_sec = mine_duration.total_seconds()
 
+    # append it to the chain
     blockchain.chain.append(new_block)
+
+    blockchain.broadcast(new_block)
 
     response = {
         'message': "Forged new block.",
@@ -306,6 +330,7 @@ if __name__ == '__main__':
 
     # initiate the Blockchain
     blockchain = Blockchain(owner,
+                            hostname = hostname,
                             transaction_pool=transaction_pool,
                             blockchainMemory=blockchainMemory,
                             blockchainDB=blockchainDB,

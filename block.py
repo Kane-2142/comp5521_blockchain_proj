@@ -1,4 +1,5 @@
 import json
+import logging
 import hashlib
 import time
 from urllib.parse import urlparse
@@ -79,7 +80,7 @@ class BlockException(Exception):
 
 
 class Blockchain ():
-    def __init__(self, owner, transaction_pool=None, blockchainMemory=None, blockchainDB=None, utxo_pool=None):
+    def __init__(self, owner, hostname:str, transaction_pool=None, blockchainMemory=None, blockchainDB=None, utxo_pool=None):
         self.chain = []
         self.transaction_pool = transaction_pool
         self.utxo_pool = utxo_pool
@@ -87,6 +88,7 @@ class Blockchain ():
         self.blockchainDB = blockchainDB
         self.owner = owner
         self.nodes = []
+        self.hostname = hostname
         # self.create_block(proof=1, previous_hash='0')
 
     # Create genesis block
@@ -325,3 +327,25 @@ class Blockchain ():
         for item in chain:
             self.apply_block_history(item)
         self.save_blockchain()
+
+    def broadcast(self, new_block) -> bool:
+        logging.info("Broadcasting to other nodes")
+        broadcasted_node = False
+        for node in self.nodes:
+            if node.hostname != self.hostname:
+                block_content = {
+                    "block": {
+                        "header": new_block.toDict,
+                        "transactions": new_block.transactions
+                    },
+                    "sender": self.hostname
+                }
+                try:
+                    logging.info(f"Broadcasting to {node.hostname}")
+                    node.send_new_block(block_content)
+                    broadcasted_node = True
+                except requests.exceptions.ConnectionError as e:
+                    logging.info(f"Failed broadcasting to {node.hostname}: {e}")
+                except requests.exceptions.HTTPError as e:
+                    logging.info(f"Failed broadcasting to {node.hostname}: {e}")
+        return broadcasted_node
