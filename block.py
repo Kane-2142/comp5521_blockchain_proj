@@ -166,14 +166,17 @@ class Blockchain ():
         unspent_amount = 0
         utxos = self.utxo_pool.get_utxos_from_memory()
         for utxo in utxos:
-            transaction = self.get_transaction_from_chain(utxo["transaction_hash"])["transaction_data"]
-            output = transaction["outputs"][utxo["output_index"]]
-            locking_script = output["locking_script"]
-            for element in locking_script.split(" "):
-                if not element.startswith("OP") and element == user:
-                    unspent_outputs.append({"amount": output["amount"],
-                                            "transaction_hash": transaction["transaction_hash"]
-                                            })
+            transaction = self.get_transaction_from_chain(utxo["transaction_hash"])
+            if transaction is not None :
+                if "transaction_data" in transaction:
+                    transaction_data = transaction["transaction_data"]
+                    output = transaction_data["outputs"][utxo["output_index"]]
+                    locking_script = output["locking_script"]
+                    for element in locking_script.split(" "):
+                        if not element.startswith("OP") and element == user:
+                            unspent_outputs.append({"amount": output["amount"],
+                                                    "transaction_hash": transaction_data["transaction_hash"]
+                                                    })
         return {"user": user,
                 "total": unspent_amount,
                 "utxos": unspent_outputs}

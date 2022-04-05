@@ -82,14 +82,12 @@ def validate_block():
     print("received new block broadcast")
     content = request.json
     new_block = Block.fromDict(content['block']['header'])
-    # transaction_list = content['block']['transactions']
-    # for tx in transaction_list:
-    #     transaction = Transaction(TransactionInput())
-    #     tx = Transaction(tx_inputs, tx_outputs)
-    # new_block.transactions.transaction_data = content['block']['transactions']
     if new_block.previous_hash == blockchain.last_block.hash:
         # add to the chain
-        blockchain.chain.append(new_block)
+        new_chain = blockchain.chain.copy()
+        new_chain.append(new_block)
+        if blockchain.valid_chain(new_chain):
+            blockchain.chain = new_chain
     else:
         if new_block.index > blockchain.last_block.index:
             # there longer chain exist from other nodes-> ask all nodes to get the longest chain, and replace that to our chain
@@ -107,8 +105,6 @@ def mine():
     mine_start = datetime.datetime.now()
     # first we need to run the proof of work algorithm to calculate the new proof..
     last_block = blockchain.last_block
-    # last_proof = last_block['proof']
-    # proof = blockchain.proof_of_work(last_proof)
 
     # we must receive reward for finding the proof in form of receiving 1 Coin
     # The output_index of the TxIn is the block height. This is to ensure that each coinbase transaction
@@ -226,12 +222,12 @@ def new_transaction_broadcast():
         return f'{transaction_exception}', 400
     #TODO after block broadcast
     # remove the utxo from the utxo pool (even though transaction not yet confirmed), to avoid double spending
-    # for tx_input in TransactionInput(content["transaction"]["inputs"]):
-    #     utxo_pool.remove_utxo(tx_input)
-    # response = {
-    #     'message': f'Transaction will be added to the Block {blockchain.last_block.index + 1}',
-    #     'transaction_hash': content["transaction"]["transaction_hash"]
-    # }
+    for tx_input in TransactionInput(content["transaction"]["inputs"]):
+        utxo_pool.remove_utxo(tx_input)
+    response = {
+        'message': f'Transaction will be added to the Block {blockchain.last_block.index + 1}',
+        'transaction_hash': content["transaction"]["transaction_hash"]
+    }
     response = {'message': "broadcast transaction received"}
     return jsonify(response, 200)
 
