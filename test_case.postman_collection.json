@@ -15,7 +15,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"nodes\": [\r\n        \"http://127.0.0.1:3001\",\r\n        \"http://127.0.0.1:3002\"\r\n    ]\r\n}",
+							"raw": "{\r\n    \"nodes\": [\r\n        \"http://127.0.0.1:3000\",\r\n        \"http://127.0.0.1:3001\",\r\n        \"http://127.0.0.1:3002\"\r\n    ]\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -79,7 +79,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"nodes\": [\r\n        \"http://127.0.0.1:3000\",\r\n        \"http://127.0.0.1:3001\"\r\n    ]\r\n}",
+							"raw": "{\r\n    \"nodes\": [\r\n        \"http://127.0.0.1:3000\",\r\n        \"http://127.0.0.1:3001\",\r\n        \"http://127.0.0.1:3002\"\r\n    ]\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -189,6 +189,38 @@
 							"response": []
 						},
 						{
+							"name": "create transaction",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"transaction\": {\r\n        \"inputs\": [\r\n            {\r\n                \"transaction_hash\": \"693ddc9877e0d73211219667b3fd98c6924adaa3022e45cc8853aeb73f1885bf\",\r\n                \"output_index\": 0\r\n            }\r\n        ],\r\n        \"outputs\": [\r\n            {\r\n                \"locking_script\": \"test_receiver\",\r\n                \"amount\": 1\r\n            }\r\n        ]\r\n    }\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://127.0.0.1:3000/transaction/new",
+									"protocol": "http",
+									"host": [
+										"127",
+										"0",
+										"0",
+										"1"
+									],
+									"port": "3000",
+									"path": [
+										"transaction",
+										"new"
+									]
+								}
+							},
+							"response": []
+						},
+						{
 							"name": "get utxo (Node1)",
 							"request": {
 								"method": "GET",
@@ -205,6 +237,50 @@
 									"port": "3000",
 									"path": [
 										"utxos"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "get utxo list",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://127.0.0.1:3001/utxos",
+									"protocol": "http",
+									"host": [
+										"127",
+										"0",
+										"0",
+										"1"
+									],
+									"port": "3001",
+									"path": [
+										"utxos"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "get owner",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://127.0.0.1:5000/owner",
+									"protocol": "http",
+									"host": [
+										"127",
+										"0",
+										"0",
+										"1"
+									],
+									"port": "5000",
+									"path": [
+										"owner"
 									]
 								}
 							},
@@ -340,6 +416,229 @@
 									"port": "3001",
 									"path": [
 										"utxos"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "get utxo list",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://127.0.0.1:3002/utxos_list",
+									"protocol": "http",
+									"host": [
+										"127",
+										"0",
+										"0",
+										"1"
+									],
+									"port": "3002",
+									"path": [
+										"utxos_list"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "get owner",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://127.0.0.1:5000/owner",
+									"protocol": "http",
+									"host": [
+										"127",
+										"0",
+										"0",
+										"1"
+									],
+									"port": "5000",
+									"path": [
+										"owner"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "2.2 node 3",
+					"item": [
+						{
+							"name": "2.2.1 sync from node 1",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"host\": \"127.0.0.1:3000\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://127.0.0.1:3001/chain/sync",
+									"protocol": "http",
+									"host": [
+										"127",
+										"0",
+										"0",
+										"1"
+									],
+									"port": "3001",
+									"path": [
+										"chain",
+										"sync"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "2.2.2 get full blockchain in node 2",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://127.0.0.1:3001/chain",
+									"protocol": "http",
+									"host": [
+										"127",
+										"0",
+										"0",
+										"1"
+									],
+									"port": "3001",
+									"path": [
+										"chain"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "create transaction",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"transaction\": {\r\n        \"inputs\": [\r\n            {\r\n                \"transaction_hash\": \"693ddc9877e0d73211219667b3fd98c6924adaa3022e45cc8853aeb73f1885bf\",\r\n                \"output_index\": 0\r\n            }\r\n        ],\r\n        \"outputs\": [\r\n            {\r\n                \"locking_script\": \"test_receiver\",\r\n                \"amount\": 1\r\n            }\r\n        ]\r\n    }\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://127.0.0.1:3001/transaction/new",
+									"protocol": "http",
+									"host": [
+										"127",
+										"0",
+										"0",
+										"1"
+									],
+									"port": "3001",
+									"path": [
+										"transaction",
+										"new"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "mine (Node3)",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://127.0.0.1:3000/mine",
+									"protocol": "http",
+									"host": [
+										"127",
+										"0",
+										"0",
+										"1"
+									],
+									"port": "3000",
+									"path": [
+										"mine"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "get utxo (Node3)",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://127.0.0.1:3001/utxos",
+									"protocol": "http",
+									"host": [
+										"127",
+										"0",
+										"0",
+										"1"
+									],
+									"port": "3001",
+									"path": [
+										"utxos"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "get utxo list Copy",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://127.0.0.1:3001/utxos",
+									"protocol": "http",
+									"host": [
+										"127",
+										"0",
+										"0",
+										"1"
+									],
+									"port": "3001",
+									"path": [
+										"utxos"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "get owner",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://127.0.0.1:5000/owner",
+									"protocol": "http",
+									"host": [
+										"127",
+										"0",
+										"0",
+										"1"
+									],
+									"port": "5000",
+									"path": [
+										"owner"
 									]
 								}
 							},
@@ -555,6 +854,15 @@
 								"{{tx_id}}"
 							]
 						}
+					},
+					"response": []
+				},
+				{
+					"name": "New Request",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": null
 					},
 					"response": []
 				}
