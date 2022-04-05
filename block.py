@@ -305,7 +305,7 @@ class Blockchain ():
 
         # replace our chain if we discover a new longer valid chain
         if new_chain:
-            self.replace_blockchain(chain)
+            self.replace_blockchain(new_chain)
             return True
 
         return False

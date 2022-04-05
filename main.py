@@ -375,7 +375,7 @@ if __name__ == '__main__':
             # append block from memory
             for block in blockchainHistory:
                 blockchain.apply_block_history(block)
-                utxo_pool.apply_block_history(block.transactions)
+                utxo_pool.apply_block_history(block["transactions"])
         elif blockchain_storage.is_blockchain_db_not_none():
             for block in blockchainHistory:
                 blockchain.apply_block_history(block)

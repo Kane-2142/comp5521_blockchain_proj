@@ -46,7 +46,7 @@ class Node:
     def send_transaction(self, transaction_data: dict) -> requests.Response:
         return self.post("transaction/new_broadcast", transaction_data)
 
-    def get_blockchain(self) -> dict:
+    def get_blockchain(self) -> list:
         return self.get(endpoint="chain")
 
     def restart(self):
