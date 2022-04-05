@@ -1,2 +1,7 @@
+[python ver.3.7]
+
 pycryptodome
 flask
+requests
+pymongo [must be python ver.3.7]
+dnspython

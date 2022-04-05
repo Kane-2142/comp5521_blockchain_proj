@@ -10,7 +10,10 @@ UTXOPOOL_FILE = "utxos.txt"
 
 class Transaction_Pool:
     def __init__(self, file_name=TRANSACTIONPOOL_FILE):
-        self.file_name = file_name
+        if file_name == "":
+            self.file_name=TRANSACTIONPOOL_FILE
+        else:
+            self.file_name = file_name
         # Create an empty file if not exists
         if not os.path.exists(self.file_name):
             file_obj = open(self.file_name, "wb")
