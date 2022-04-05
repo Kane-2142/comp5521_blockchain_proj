@@ -88,7 +88,7 @@ def validate_block():
     else:
         if new_block.index > blockchain.last_block.index:
             # there longer chain exist from other nodes-> ask all nodes to get the longest chain, and replace that to our chain
-            pass
+            blockchain.resolve_conflicts()
         else:
             return jsonify({'message': "block dropped"}), 400
     blockchain.blockchain_storage(blockchain.last_block)

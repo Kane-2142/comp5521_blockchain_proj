@@ -257,7 +257,7 @@ class Blockchain ():
         while current_index < len(chain):
             block = Block.fromDict(chain[current_index])
             # check that the hash of the block is correct
-            if last_block.previous_hash != block.hash:
+            if last_block.hash != block.previous_hash:
                 return False
             # check that the proof of work is correct
             if not self.validate_proof(last_block.hash, last_block.difficulty):
@@ -282,17 +282,14 @@ class Blockchain ():
         for node in neighbours:
 
             # using http get to obtain the chain
-            response = requests.get(f'http://chain/{node}')  # need to build an endpoint
+            chain_json = node.get_blockchain()
+            length = chain_json['length']
+            chain = chain_json['chain']
 
-            if response.status_code == 200:
-
-                length = response.json()['length']
-                chain = response.json()['chain']
-
-                # check if the chain is longer and whether the chain is valid
-                if length > max_length and self.valid_chain(chain):
-                    max_length = length
-                    new_chain = chain
+            # check if the chain is longer and whether the chain is valid
+            if length > max_length and self.valid_chain(chain):
+                max_length = length
+                new_chain = chain
 
         # replace our chain if we discover a new longer valid chain
         if new_chain:
