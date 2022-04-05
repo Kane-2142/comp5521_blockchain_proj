@@ -100,6 +100,8 @@ class Blockchain ():
             nonce=0,
             transactions=[]
         )
+
+        first_block = self.proof_of_work(self.chain,latest_index=0, transactions=None, merkle_root=None)
         self.chain.append(first_block)
         # blockchainDB.add_blocks(first_block)
 
@@ -188,15 +190,25 @@ class Blockchain ():
         transaction_data = self.get_transaction_from_utxo(utxo_hash, utxo_index)
         return transaction_data["outputs"][utxo_index]["locking_script"]
 
+    # default genesis: latest_index is 0, other block should be -1
     @staticmethod
-    def proof_of_work(blockchain, transactions, merkle_root):
+    def proof_of_work(blockchain, latest_index=-1, transactions=[], merkle_root=""):
         nonce = 0
-        latestBlock = blockchain[-1]
-        difficulty = Blockchain.get_difficulty(blockchain)
+
+        if latest_index == 0:
+            new_index = 1
+            previous_hash = ""
+            difficulty = 1
+        else:
+            new_index = blockchain[-1].index + 1
+            previous_hash = blockchain[-1].hash
+            difficulty = Blockchain.get_difficulty(blockchain)
+
+
         while (True):
             block = Block(
-                index=latestBlock.index + 1,
-                previous_hash=latestBlock.hash,
+                index=new_index,
+                previous_hash=previous_hash,
                 timestamp=get_timestamp(),
                 transactions=transactions,
                 merkle_root=merkle_root,
@@ -293,7 +305,7 @@ class Blockchain ():
 
         # replace our chain if we discover a new longer valid chain
         if new_chain:
-            self.chain = new_chain
+            self.replace_blockchain(chain)
             return True
 
         return False

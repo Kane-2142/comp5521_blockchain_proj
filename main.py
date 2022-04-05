@@ -91,7 +91,7 @@ def validate_block():
             blockchain.resolve_conflicts()
         else:
             return jsonify({'message': "block dropped"}), 400
-    blockchain.blockchain_storage(blockchain.last_block)
+    blockchain.broadcast(blockchain.last_block)
 
     #TODO pseudo code:
     # if newBlock.index-1 == chain.lastindex and newBlock.previous_hash = chain.lastblock.hash:
