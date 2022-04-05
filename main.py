@@ -17,10 +17,6 @@ import sys
 import requests
 from node import Node
 
-transactions = []
-TPCoins = []
-last_block_hash = ""
-
 COINBASE_REWARD = 1
 
 hostname = ""

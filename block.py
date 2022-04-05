@@ -126,8 +126,6 @@ class Blockchain ():
         else:
             raise BlockException("", "No transaction in transaction_pool")
 
-    def get_last_block(self):
-        return self.chain[-1]
 
     @property
     def last_block(self) -> Block:

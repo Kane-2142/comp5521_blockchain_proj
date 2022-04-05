@@ -2,13 +2,17 @@ import json
 import logging
 import os
 
+
 # from block import Block
 
 
 class BlockchainMemory:
 
     def __init__(self, file_name="blockchainMemory.txt"):
-        self.file_name = file_name
+        if file_name == "":
+            self.file_name = "blockchainMemory.txt"
+        else:
+            self.file_name = file_name
         if not os.path.exists(self.file_name):
             file_obj = open(self.file_name, "wb")
             file_obj.close()
@@ -22,7 +26,7 @@ class BlockchainMemory:
             else:
                 block_list = []
         return block_list
-        
+
     def store_blockchain_in_memory(self, blockchain):
         logging.info("Storing blockchain in memory")
         text = json.dumps(blockchain).encode("utf-8")
