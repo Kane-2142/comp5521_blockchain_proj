@@ -2,7 +2,7 @@ import json
 import logging
 import os
 
-from block import Block
+# from block import Block
 
 
 class BlockchainMemory:

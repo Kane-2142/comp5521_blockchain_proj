@@ -2,6 +2,8 @@ import json
 import logging
 import os
 from transaction import TransactionInput, TransactionOutput, Transaction
+from blockchain_db import BlockchainDB
+from blockchain_memory import BlockchainMemory
 
 TRANSACTIONPOOL_FILE = "transactions.txt"
 UTXOPOOL_FILE = "utxos.txt"
@@ -95,3 +97,36 @@ class Utxo_Pool:
                 for input in transaction["inputs"]:
                     if input["transaction_hash"]:
                         self.remove_utxo(TransactionInput(input["transaction_hash"], input["output_index"]))
+
+class Blockchain_Storage:
+    def __init__(self, memory_file_name=""):
+        self.blockchainMemory = BlockchainMemory(memory_file_name)
+        self.blockchainDB = BlockchainDB()
+
+    def get_chain_from_storage(self):
+        if self.blockchainMemory is not None:
+            # get all blocks from memory
+            return self.blockchainMemory.get_blockchain_from_memory()
+        elif self.blockchainDB is not None:
+            # get all blocks from DB
+            return self.blockchainDB.get_all_blocks()
+
+    def is_blockchain_memory_not_none(self) -> bool:
+        return self.blockchainMemory is not None
+
+    def is_blockchain_db_not_none(self) -> bool:
+        return self.blockchainDB is not None
+
+    def store_blockchain_in_memory(self, chain):
+        if self.blockchainMemory is not None:
+            self.blockchainMemory.store_blockchain_in_memory([item.toDict for item in chain])
+        elif self.blockchainDB is not None:
+            self.blockchainDB.delect_all_blocks()
+            for block in chain:
+                self.blockchainDB.add_blocks(block)
+
+    def clear_blockchain_from_memory(self):
+        if self.blockchainMemory is not None:
+            self.blockchainMemory.clear_blockchain_from_memory()
+        if self.blockchainDB is not None:
+            self.blockchainDB.delect_all_blocks()

@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 from merkle_tree import get_merkle_root
 from node import Node
 import requests
+from storage import Blockchain_Storage
 
 DIFFICULTY_ADJUSTMENT_INTERVAL = 1
 BLOCK_GENERATION_INTERVAL = 20
@@ -80,12 +81,11 @@ class BlockException(Exception):
 
 
 class Blockchain ():
-    def __init__(self, owner, hostname:str, transaction_pool=None, blockchainMemory=None, blockchainDB=None, utxo_pool=None):
+    def __init__(self, owner, hostname:str, transaction_pool=None, blockchain_storage=None, utxo_pool=None):
         self.chain = []
         self.transaction_pool = transaction_pool
         self.utxo_pool = utxo_pool
-        self.blockchainMemory = blockchainMemory
-        self.blockchainDB = blockchainDB
+        self.blockchain_storage = blockchain_storage
         self.owner = owner
         self.nodes = []
         self.hostname = hostname
@@ -315,12 +315,8 @@ class Blockchain ():
         self.chain.append(new_block)
 
     def save_blockchain(self):
-        if self.blockchainMemory is not None:
-            self.blockchainMemory.store_blockchain_in_memory([item.toDict for item in self.chain])
-        elif self.blockchainDB is not None:
-            self.blockchainDB.delect_all_blocks()
-            for block in self.chain:
-                self.blockchainDB.add_blocks(block)
+        blockchain_storage.store_blockchain_in_memory(self.chain)
+
 
     def replace_blockchain(self, chain):
         self.chain = []

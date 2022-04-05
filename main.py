@@ -7,13 +7,11 @@ import json
 from uuid import uuid4
 
 from flask import Flask, jsonify, request
-from blockchain_memory import BlockchainMemory
-from blockchain_db import BlockchainDB
 from block import Block, Blockchain, BlockException
 from transaction import Transaction, TransactionInput, TransactionOutput
 from owner import Owner
 
-from storage import Transaction_Pool, Utxo_Pool
+from storage import Transaction_Pool, Utxo_Pool, Blockchain_Storage
 from transaction_verifier import Transaction_Verifier, TransactionVer_Exception
 import sys
 import requests
@@ -30,11 +28,10 @@ hostname = ""
 # initiate the node
 app = Flask(__name__)
 owner = Owner()
+blockchain_storage = None
 transaction_pool = None
 utxo_pool = None
 blockchain = None
-blockchainMemory = None
-blockchainDB = None
 # generate a globally unique address for this node
 node_identifier = str(uuid4()).replace('-', '')
 
@@ -287,10 +284,7 @@ def register_nodes():
 # endpoint to clear all the storages
 @app.route('/delete/chain', methods=['GET'])
 def delete_chain():
-    if blockchainMemory is not None:
-        blockchainMemory.clear_blockchain_from_memory()
-    if blockchainDB is not None:
-        blockchainDB.delect_all_blocks()
+    blockchain_storage.clear_blockchain_from_memory()
     utxo_pool.clear_utxos_from_memory()
     transaction_pool.clear_transactions_from_memory()
 
@@ -341,16 +335,14 @@ if __name__ == '__main__':
 
     node_name = sys.argv[2] if len(sys.argv) > 2 else None
     if node_name is not None:
+        blockchain_storage = Blockchain_Storage(memory_file_name=f'blockchainMemory_{node_name}.txt')
         transaction_pool = Transaction_Pool(file_name=f'transactions_{node_name}.txt')
-        blockchainMemory = BlockchainMemory(file_name=f'blockchainMemory_{node_name}.txt')
         utxo_pool = Utxo_Pool(file_name=f'utxos_{node_name}.txt')
     else:
+        # initiate the Blockchain Storage
+        blockchain_storage = Blockchain_Storage()
         # initiate the Transaction Pool
         transaction_pool = Transaction_Pool()
-        # initiate the BlockchainMemory
-        blockchainMemory = BlockchainMemory()
-        # initiate the BlockchainDB
-        blockchainDB = BlockchainDB()
         # initiate the UTXO State
         utxo_pool = Utxo_Pool()
 
@@ -358,26 +350,20 @@ if __name__ == '__main__':
     blockchain = Blockchain(owner,
                             hostname = hostname,
                             transaction_pool=transaction_pool,
-                            blockchainMemory=blockchainMemory,
-                            blockchainDB=blockchainDB,
+                            blockchain_storage=blockchain_storage,
                             utxo_pool=utxo_pool)
     blockchainHistory = []
 
     # get block
-    if blockchainMemory is not None:
-        # get all blocks from memory
-        blockchainHistory = blockchainMemory.get_blockchain_from_memory()
-    elif blockchainDB is not None:
-        # get all blocks from DB
-        blockchainHistory = blockchainDB.get_all_blocks()
+    blockchainHistory = blockchain_storage.get_chain_from_storage()
 
     if len(blockchainHistory) > 0:
-        if blockchainMemory is not None:
+        if blockchain_storage.is_blockchain_memory_not_none():
             # append block from memory
             for block in blockchainHistory:
                 blockchain.apply_block_history(block)
                 utxo_pool.apply_block_history(block.transactions)
-        elif blockchainDB is not None:
+        elif blockchain_storage.is_blockchain_db_not_none():
             for block in blockchainHistory:
                 blockchain.apply_block_history(block)
                 utxo_pool.apply_block_history(block["transactions"])
