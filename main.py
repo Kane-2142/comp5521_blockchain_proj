@@ -82,9 +82,14 @@ def validate_block():
     print("received new block broadcast")
     content = request.json
     new_block = Block.fromDict(content['block']['header'])
+    # transaction_list = content['block']['transactions']
+    # for tx in transaction_list:
+    #     transaction = Transaction(TransactionInput())
+    #     tx = Transaction(tx_inputs, tx_outputs)
+    # new_block.transactions.transaction_data = content['block']['transactions']
     if new_block.previous_hash == blockchain.last_block.hash:
         # add to the chain
-        pass
+        blockchain.chain.append(new_block)
     else:
         if new_block.index > blockchain.last_block.index:
             # there longer chain exist from other nodes-> ask all nodes to get the longest chain, and replace that to our chain

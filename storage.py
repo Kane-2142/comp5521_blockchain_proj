@@ -89,7 +89,7 @@ class Utxo_Pool:
         logging.info("Clearing utxos from memory")
         open(self.file_name, 'w').close()
 
-    def apply_block_history(self, transactions):
+    def apply_block_history(self, transactions:list):
         if transactions:
             for transaction in transactions:
                 for index, output in enumerate(transaction["outputs"]):

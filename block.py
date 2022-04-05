@@ -101,7 +101,7 @@ class Blockchain ():
             transactions=[]
         )
 
-        first_block = self.proof_of_work(self.chain,latest_index=0, transactions=None, merkle_root=None)
+        first_block = self.proof_of_work(latest_index=0, transactions=[], merkle_root="")
         self.chain.append(first_block)
         # blockchainDB.add_blocks(first_block)
 
@@ -191,18 +191,20 @@ class Blockchain ():
         return transaction_data["outputs"][utxo_index]["locking_script"]
 
     # default genesis: latest_index is 0, other block should be -1
-    @staticmethod
-    def proof_of_work(blockchain, latest_index=-1, transactions=[], merkle_root=""):
+    # @staticmethod
+    def proof_of_work(self, latest_index=-1, transactions=None, merkle_root=""):
         nonce = 0
+        if transactions is None:
+            transactions = []
 
         if latest_index == 0:
             new_index = 1
             previous_hash = ""
             difficulty = 1
         else:
-            new_index = blockchain[-1].index + 1
-            previous_hash = blockchain[-1].hash
-            difficulty = Blockchain.get_difficulty(blockchain)
+            new_index = self.chain[-1].index + 1
+            previous_hash = self.chain[-1].hash
+            difficulty = Blockchain.get_difficulty(self.chain)
 
 
         while (True):
