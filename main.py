@@ -81,6 +81,17 @@ def change_owner():
 def validate_block():
     print("received new block broadcast")
     content = request.json
+    new_block = Block.fromDict(content['block']['header'])
+    if new_block.previous_hash == blockchain.last_block.hash:
+        # add to the chain
+        pass
+    else:
+        if new_block.index > blockchain.last_block.index:
+            # there longer chain exist from other nodes-> ask all nodes to get the longest chain, and replace that to our chain
+            pass
+        else:
+            return jsonify({'message': "block dropped"}), 400
+    blockchain.blockchain_storage(blockchain.last_block)
 
     #TODO pseudo code:
     # if newBlock.index-1 == chain.lastindex and newBlock.previous_hash = chain.lastblock.hash:
@@ -98,6 +109,8 @@ def validate_block():
     #        drop
     # if not drop:
     #    chain.broadcast()
+
+
 
 
     # blockchain_base = blockchain_memory.get_blockchain_from_memory()

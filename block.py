@@ -315,7 +315,7 @@ class Blockchain ():
         self.chain.append(new_block)
 
     def save_blockchain(self):
-        blockchain_storage.store_blockchain_in_memory(self.chain)
+        self.blockchain_storage.store_blockchain_in_memory(self.chain)
 
 
     def replace_blockchain(self, chain):
