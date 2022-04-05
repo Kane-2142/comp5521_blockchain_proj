@@ -93,36 +93,6 @@ def validate_block():
             return jsonify({'message': "block dropped"}), 400
     blockchain.broadcast(blockchain.last_block)
 
-    #TODO pseudo code:
-    # if newBlock.index-1 == chain.lastindex and newBlock.previous_hash = chain.lastblock.hash:
-    #    # no branching, can append to our chain
-    #    if pow_valdiate(newBlock)  and newBlock.transactions.validate:
-    #       chain.append(newBlock)
-    #    else:
-    #       drop
-    # else:
-    #    if newBlock.index-1 > chain.lastindex:
-    #        # there longer chain exist from other nodes-> ask all nodes to get the longest chain, and replace that to our chain
-    #        resolve_conflict()
-    #    else:
-    #        # shorter branch block, just drop
-    #        drop
-    # if not drop:
-    #    chain.broadcast()
-
-
-
-
-    # blockchain_base = blockchain_memory.get_blockchain_from_memory()
-    # try:
-    #     block = NewBlock(blockchain_base, MY_HOSTNAME)
-    #     block.receive(new_block=content["block"], sender=content["sender"])
-    #     block.validate()
-    #     block.add()
-    #     block.clear_block_transactions_from_mempool()
-    #     block.broadcast()
-    # except (NewBlockException, TransactionException) as new_block_exception:
-    #     return f'{new_block_exception}', 400
     return "Transaction success", 200
 
 
