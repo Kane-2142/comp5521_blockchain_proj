@@ -88,6 +88,7 @@ def validate_block():
         new_chain.append(new_block)
         if blockchain.valid_chain(new_chain):
             blockchain.chain = new_chain
+            utxo_pool.apply_block_history(new_block.transactions)
     else:
         if new_block.index > blockchain.last_block.index:
             # there longer chain exist from other nodes-> ask all nodes to get the longest chain, and replace that to our chain

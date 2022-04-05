@@ -105,7 +105,7 @@ class Blockchain ():
         self.chain.append(first_block)
         # blockchainDB.add_blocks(first_block)
 
-    def create_block(self, previousBlock):
+    def create_block(self, previousBlock) -> Block:
         transactions = self.transaction_pool.get_transactions_from_memory()
         if transactions:
             new_block = Block(
@@ -130,7 +130,7 @@ class Blockchain ():
         return self.chain[-1]
 
     @property
-    def last_block(self):
+    def last_block(self) -> Block:
         # returns last block in the chain
         return self.chain[-1]
 
@@ -267,13 +267,15 @@ class Blockchain ():
     #    block_string = json.dumps(block, sort_keys=True).encode()
     #    return hashlib.sha256(block_string).hexdigest()
 
-    def valid_chain(self, chain):
+    def valid_chain(self, chain:[Block]):
         # determine if a given blockchain is valid
-        last_block = Block.fromDict(chain[0])
+        # print(type(chain[0]))
+        # print(chain[0])
+        last_block = chain[0]
         current_index = 1
 
         while current_index < len(chain):
-            block = Block.fromDict(chain[current_index])
+            block = chain[current_index]
             # check that the hash of the block is correct
             if last_block.hash != block.previous_hash:
                 return False
@@ -302,12 +304,16 @@ class Blockchain ():
             # using http get to obtain the chain
             chain_json = node.get_blockchain()
             length = chain_json['length']
-            chain = chain_json['chain']
+            blocks = chain_json['chain']
+            chain = []
+            for block in blocks:
+                chain.append(Block.fromDict(block))
 
             # check if the chain is longer and whether the chain is valid
-            if length > max_length and self.valid_chain(chain):
-                max_length = length
-                new_chain = chain
+            if length > max_length:
+                if self.valid_chain(chain):
+                    max_length = length
+                    new_chain = chain
 
         # replace our chain if we discover a new longer valid chain
         if new_chain:
@@ -333,16 +339,17 @@ class Blockchain ():
         self.blockchain_storage.store_blockchain_in_memory(self.chain)
 
 
-    def replace_blockchain(self, chain):
+    def replace_blockchain(self, chain:[Block]):
         self.chain = []
         self.utxo_pool.clear_utxos_from_memory()
         self.transaction_pool.clear_transactions_from_memory()
         for item in chain:
-            self.apply_block_history(item)
-            self.utxo_pool.apply_block_history(item["transactions"])
+            # self.apply_block_history(item)
+            self.chain.append(item)
+            self.utxo_pool.apply_block_history(item.transactions)
         self.save_blockchain()
 
-    def broadcast(self, new_block) -> bool:
+    def broadcast(self, new_block : Block) -> bool:
         logging.info("Broadcasting to other nodes")
         broadcasted_node = False
         for node in self.nodes:
