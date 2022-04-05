@@ -8,7 +8,7 @@ from node import Node
 import requests
 from storage import Blockchain_Storage
 
-DIFFICULTY_ADJUSTMENT_INTERVAL = 1
+DIFFICULTY_ADJUSTMENT_INTERVAL = 5
 BLOCK_GENERATION_INTERVAL = 20
 
 def get_timestamp():
@@ -174,6 +174,7 @@ class Blockchain ():
                     locking_script = output["locking_script"]
                     for element in locking_script.split(" "):
                         if not element.startswith("OP") and element == user:
+                            unspent_amount = unspent_amount + output["amount"]
                             unspent_outputs.append({"amount": output["amount"],
                                                     "transaction_hash": transaction_data["transaction_hash"]
                                                     })
@@ -334,8 +335,11 @@ class Blockchain ():
 
     def replace_blockchain(self, chain):
         self.chain = []
+        self.utxo_pool.clear_utxos_from_memory()
+        self.transaction_pool.clear_transactions_from_memory()
         for item in chain:
             self.apply_block_history(item)
+            self.utxo_pool.apply_block_history(item["transactions"])
         self.save_blockchain()
 
     def broadcast(self, new_block) -> bool:

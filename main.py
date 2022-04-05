@@ -222,11 +222,11 @@ def new_transaction_broadcast():
         return f'{transaction_exception}', 400
     #TODO after block broadcast
     # remove the utxo from the utxo pool (even though transaction not yet confirmed), to avoid double spending
-    for tx_input in TransactionInput(content["transaction"]["inputs"]):
-        utxo_pool.remove_utxo(tx_input)
+    for tx_input in content['transaction']['inputs']:
+        transaction_input = TransactionInput(tx_input['transaction_hash'], tx_input['output_index'])
+        utxo_pool.remove_utxo(transaction_input)
     response = {
-        'message': f'Transaction will be added to the Block {blockchain.last_block.index + 1}',
-        'transaction_hash': content["transaction"]["transaction_hash"]
+        'message': f'Broadcast transaction added to the pool'
     }
     response = {'message': "broadcast transaction received"}
     return jsonify(response, 200)
