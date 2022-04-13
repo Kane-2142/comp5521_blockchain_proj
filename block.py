@@ -235,7 +235,7 @@ class Blockchain ():
     @staticmethod
     def get_adjusted_difficulty(latestBlock, aBlockchain):
         prevAdjustmentBlock = aBlockchain[-1]
-        timeExpected = BLOCK_GENERATION_INTERVAL - DIFFICULTY_ADJUSTMENT_INTERVAL
+        timeExpected = BLOCK_GENERATION_INTERVAL * DIFFICULTY_ADJUSTMENT_INTERVAL
         timeTaken = latestBlock.timestamp - prevAdjustmentBlock.timestamp
         if timeTaken < timeExpected / 2:
             return prevAdjustmentBlock.difficulty + 1
